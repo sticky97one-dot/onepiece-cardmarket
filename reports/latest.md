@@ -3,18 +3,18 @@
 
 ## Offres sous le marché (40)
 - **Zoro-Juurou** OP05-067 V1 (Promos tournois & événements) — 136.61 € · score 19 · offre à 60.00 € soit 40% sous les ventes récentes (vérifier état et langue), moy. 7 j +10% vs 30 j
-- **Don!!**  V3 (PRB01 The Best) — 58.02 € · score 10 · offre à 35.00 € soit 40% sous les ventes récentes (vérifier état et langue)
+- **Don!! (PRB Reiju)**  V3 (PRB01 The Best) — 58.02 € · score 10 · offre à 35.00 € soit 40% sous les ventes récentes (vérifier état et langue)
 - **Marshall.D.Teach** OP09-081 (Promos packs de participation) — 125.66 € · score 41 · offre à 70.00 € soit 40% sous les ventes récentes (vérifier état et langue), moy. 7 j +21% vs 30 j
 - **Jewelry Bonney** OP08-105 V2 (Promos packs de participation) — 149.25 € · score 49 · offre à 90.00 € soit 40% sous les ventes récentes (vérifier état et langue), moy. 7 j +32% vs 30 j
 - **Trafalgar Law** OP10-119 V3 (OP10 · Royal Blood) — 623.76 € · score 15 · offre à 350.00 € soit 40% sous les ventes récentes (vérifier état et langue)
 - **Trafalgar Law** OP01-002 V1 (OP01 · Romance Dawn · Pre-Errata) — 776.06 € · score 19 · offre à 440.00 € soit 39% sous les ventes récentes (vérifier état et langue)
 - **Monkey.D.Luffy** OP09-119 V3 (OP09 · Emperors in the New World) — 2985.75 € · score 30 · offre à 1700.00 € soit 39% sous les ventes récentes (vérifier état et langue), moy. 7 j +12% vs 30 j
-- **DON!!**  V3 (PRB02 The Best Vol.2) — 57.41 € · score 10 · offre à 29.99 € soit 39% sous les ventes récentes (vérifier état et langue), moy. 7 j -8% vs 30 j
+- **DON!! (PRB02 - Usopp)**  V3 (PRB02 The Best Vol.2) — 57.41 € · score 10 · offre à 29.99 € soit 39% sous les ventes récentes (vérifier état et langue), moy. 7 j -8% vs 30 j
 - **Dracule Mihawk** OP12-030 (OP14 · The Azure Sea's Seven · Asie/JP) — 80.66 € · score 0 · offre à 49.00 € soit 39% sous les ventes récentes (vérifier état et langue), moy. 7 j -6% vs 30 j
 - **Monkey.D.Luffy** ST01-012 V1 (ST01 · Super PreRelease Starter Deck: Straw Hat Crew) — 210.24 € · score 0 · offre à 79.99 € soit 38% sous les ventes récentes (vérifier état et langue), moy. 7 j -24% vs 30 j
 
 ## Versions en retard (potentiel de rattrapage) (40)
-- **Don!!**  V1 (Gift Collection 2023 · Asie/JP) — 5.98 € · score 1 · la version Gift Collection 2023 · Asie/JP V2 à 20 € a pris +160%, celle-ci seulement -10% : retard à rattraper, moy. 7 j -10% vs 30 j
+- **Don!! (2nd English Anniversary / 4 Emperors)**  V1 (Gift Collection 2023 · Asie/JP) — 5.98 € · score 1 · la version Gift Collection 2023 · Asie/JP V2 à 20 € a pris +160%, celle-ci seulement -10% : retard à rattraper, moy. 7 j -10% vs 30 j
 - **Monkey.D.Luffy** ST10-006 (Premium Card Collection) — 804.42 € · score 0 · la version Promos boutique & Red Envelope V1 à 740 € a pris +144%, celle-ci seulement -19% : retard à rattraper, moy. 7 j -19% vs 30 j, offres tendues : prix le plus bas ≥ 90 % de la tendance
 - **Sanji** OP07-064 (Premium Card Collection) — 56.58 € · score 7 · la version Promos boutique & Red Envelope V2 à 29 € a pris +124%, celle-ci seulement -6% : retard à rattraper, moy. 7 j -6% vs 30 j
 - **Charlotte Pudding** OP08-058 V2 (OP08 · Two Legends) — 41.92 € · score 24 · la version EB02 · Anime 25th Collection · Asie/JP à 180 € a pris +125%, celle-ci seulement +4% : retard à rattraper
@@ -54,7 +54,7 @@
 - **Monkey.D.Luffy** ST13-003 V2 (ST13 · Ultimate Deck: The Three Brothers · Asie/JP) — 37.74 € · score 13 · moy. 7 j +15% vs 30 j, peu d'échanges : prix moins fiable
 - **Stussy** OP13-110 V2 (OP13 · Carrying On His Will · Asie/JP) — 5.38 € · score 9 · moy. 7 j -7% vs 30 j, offres tendues : prix le plus bas ≥ 90 % de la tendance
 - **Shakuyaku** OP12-006 (Promos boutique & Red Envelope) — 3.16 € · score 9 · moy. 7 j -7% vs 30 j, offres tendues : prix le plus bas ≥ 90 % de la tendance
-- **Don!!**  (Gift Collection 2023 · Asie/JP) — 4.03 € · score 8 · offres tendues : prix le plus bas ≥ 90 % de la tendance
+- **Don!! (Flame-Flame Fruit Coliseum)**  (Gift Collection 2023 · Asie/JP) — 4.03 € · score 8 · offres tendues : prix le plus bas ≥ 90 % de la tendance
 - **Varie** OP15-074 (OP15-EB04 Release Event Pack) — 4.05 € · score 6 · 
 - **Sogeking** OP03-122 V2 (OP03 · Pillars of Strength · Asie/JP) — 8.02 € · score 5 · moy. 7 j +6% vs 30 j
 - **Shura** OP05-106 (Promos tournois & événements) — 13.17 € · score 5 · moy. 7 j -9% vs 30 j, offres tendues : prix le plus bas ≥ 90 % de la tendance

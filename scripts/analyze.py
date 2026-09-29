@@ -284,7 +284,7 @@ def analyze():
                 reasons.insert(0, f"offre à {low:.2f} € soit {disc:.0%} sous les ventes récentes (vérifier état et langue)")
 
         items.append({
-            "id": pid, "n": re.sub(r"\s*\([^)]*\)\s*$", "", p["name"]), "c": code,
+            "id": pid, "n": p["name"] if re.match(r"(?i)don!!", p["name"]) else re.sub(r"\s*\([^)]*\)\s*$", "", p["name"]), "c": code,
             "v": version.get(pid), "g": p.get("idMetacard") or 0, "e": exp_label.get(p["idExpansion"], ""), "k": kind,
             "t": trend, "lo": low, "a1": a1, "a7": a7, "a30": a30,
             "d1": round(d1, 4) if d1 is not None else None,
