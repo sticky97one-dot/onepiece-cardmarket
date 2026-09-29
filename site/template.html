@@ -189,7 +189,8 @@ const esc = s => String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&g
 const store = { get(k,d){try{const v=localStorage.getItem('rop.'+k);return v==null?d:JSON.parse(v)}catch(e){return d}}, set(k,v){try{localStorage.setItem('rop.'+k,JSON.stringify(v))}catch(e){}} };
 
 $('#meta').textContent = `Prix Cardmarket du ${new Date(D.priceDate).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'})} · ${D.counts.produits.toLocaleString('fr-FR')} produits · historique ${D.historyDays} j`;
-if (D.sample) { $('#banner').hidden=false; $('#banner').textContent = "Données d'exemple : le tableau se remplira avec les vrais prix Cardmarket dès que la collecte quotidienne sera branchée."; }
+if (D.pending) { $('#banner').hidden=false; $('#banner').textContent = "En attente des vrais prix Cardmarket : la collecte quotidienne démarre dès que GitHub est branché. En attendant, le calculateur Whatnot marche en tapant toi-même le prix de revente."; $('#meta').textContent='Prix Cardmarket : en attente de la première collecte'; }
+else if (D.sample) { $('#banner').hidden=false; $('#banner').textContent = "Données d'exemple : le tableau se remplira avec les vrais prix Cardmarket dès que la collecte quotidienne sera branchée."; }
 else if (D.historyDays < 7) { $('#banner').hidden=false; $('#banner').textContent = `Historique en construction (${D.historyDays} jour${D.historyDays>1?'s':''}) : les signaux s'appuient pour l'instant sur les moyennes 1, 7 et 30 jours de Cardmarket, et deviendront plus fins chaque jour.`; }
 
 function label(i){ return `${esc(i.n)}<small>${esc(i.c||'')}${i.v?' V'+i.v:''}</small>`; }
