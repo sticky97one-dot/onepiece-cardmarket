@@ -14,3 +14,17 @@ Utilisation
 - L'enchère en cours est lue automatiquement (le montant en € le plus gros à l'écran) ; tu peux la taper toi-même.
 - Si le vendeur n'écrit pas le code : tape « robin 062 » ou « OP09-062 » dans la recherche puis Entrée.
 - Les prix se mettent à jour tout seuls chaque matin (bouton ↻ pour forcer).
+
+Reconnaissance du nom et de l'image (version 1.1)
+- Si le code n'est pas écrit, le panneau cherche le NOM de la carte dans le titre du lot
+  (ex. « Nico Robin alt OP09 ») et propose les cartes possibles à toucher.
+- Bouton « 📷 Identifier la carte à l'image » : capture la vidéo du live et demande à Claude
+  de reconnaître la carte montrée (nom, code, alt ou non, anglais ou japonais).
+  Il faut une clé API Claude (payante à l'usage, environ 0,5 centime par identification) :
+    1. Va sur https://console.anthropic.com, crée un compte et ajoute un peu de crédit (5 $ suffisent longtemps).
+    2. Menu « API Keys » > « Create Key », copie la clé (sk-ant-…).
+    3. Dans le panneau : Réglages > « Clé API Claude », colle la clé. Elle reste sur ton ordinateur.
+- Réglages > « Image automatique : Oui » : le panneau analyse l'image tout seul quand aucun code n'est écrit,
+  au maximum une fois toutes les 10 secondes et seulement si l'image a changé.
+- Mise à jour depuis la version 1.0 : remplace les fichiers du dossier, puis sur chrome://extensions
+  clique sur la flèche ↻ de l'extension. Chrome demandera d'autoriser la capture de l'onglet.

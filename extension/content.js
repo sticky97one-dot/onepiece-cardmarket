@@ -10,7 +10,7 @@
 
   const DATA_URL = "https://raw.githubusercontent.com/sticky97one-dot/onepiece-cardmarket/main/site/data.json";
   const MAX_AGE_MS = 4 * 3600 * 1000;
-  const DEFAULTS = { target: 20, sellFee: 5, shipOut: 0.5, shipIn: 0, buyFee: 0, basis: "safe" };
+  const DEFAULTS = { target: 20, sellFee: 5, shipOut: 0.5, shipIn: 0, buyFee: 0, basis: "safe", apiKey: "", model: "claude-sonnet-5-5", autoVision: false };
 
   let D = null, byCode = new Map(), byGroup = new Map();
   let settings = { ...DEFAULTS };
@@ -21,6 +21,13 @@
   let recent = [];             // derniers codes vus
   let lastSeen = new Set();
   let minimized = false;
+  let nameIdx = new Map(), aliasIdx = new Map();   // nom normalisé -> codes ; surnom -> noms
+  let candidates = [];         // codes possibles trouvés par le nom
+  let hints = [];              // mots-clés vus (alt, JP, leader…)
+  let source = "";             // d'où vient la carte affichée : code, nom, image, recherche
+  let visionPref = null;       // {lang, alt} renvoyé par la reconnaissance d'image
+  let lastHash = null, lastVisionAt = 0, visionBusy = false;
+  const STOP = new Set(["don", "event", "stage", "the", "and", "leader", "card", "pack", "deck"]);
 
   // ---------- utilitaires
   const eur = v => v == null ? "—" : (v >= 100 ? v.toFixed(0) : v.toFixed(2)).replace(".", ",") + " €";
@@ -59,8 +66,69 @@
       if (i.c) { if (!byCode.has(i.c)) byCode.set(i.c, []); byCode.get(i.c).push(i); }
       if (i.g) { if (!byGroup.has(i.g)) byGroup.set(i.g, []); byGroup.get(i.g).push(i); }
     }
+    nameIdx = new Map(); aliasIdx = new Map();
+    for (const i of D.items) {
+      if (i.k !== "S" || !i.c) continue;
+      const nn = norm(i.n);
+      if (nn.length < 4) continue;
+      if (!nameIdx.has(nn)) nameIdx.set(nn, new Set());
+      nameIdx.get(nn).add(i.c);
+      const toks = nn.split(" ");
+      const last = toks[toks.length - 1];
+      if (toks.length > 1 && last.length >= 4 && !STOP.has(last)) {
+        if (!aliasIdx.has(last)) aliasIdx.set(last, new Set());
+        aliasIdx.get(last).add(nn);
+      }
+    }
     setStatus(`Prix Cardmarket du ${new Date(D.priceDate).toLocaleDateString("fr-FR")}`);
     render();
+  }
+
+  // texte « titre » : ce qui est écrit en assez gros à l'écran (titre du lot, bandeau), hors chat
+  function titleText() {
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    const parts = []; let n, count = 0;
+    while ((n = walker.nextNode()) && count < 20000) {
+      count++;
+      const t = n.nodeValue.trim();
+      if (t.length < 3 || t.length > 160) continue;
+      const el = n.parentElement;
+      if (!el || el.closest("#radar-whatnot-host")) continue;
+      const fs = parseFloat(getComputedStyle(el).fontSize) || 0;
+      if (fs < 15) continue;
+      const r = el.getBoundingClientRect();
+      if (r.width === 0 || r.bottom < 0 || r.top > innerHeight) continue;
+      parts.push(t);
+    }
+    return parts.join(" | ");
+  }
+
+  // cartes possibles à partir d'un nom (et d'un numéro d'extension éventuel : OP09, EB02…)
+  function codesFromName(text) {
+    const t = " " + norm(text) + " ";
+    const names = new Set();
+    for (const nn of nameIdx.keys()) if (t.includes(" " + nn + " ")) names.add(nn);
+    // enlève les noms contenus dans un nom plus long trouvé (ex. « luffy » dans « monkey d luffy »)
+    for (const a of [...names]) for (const b of names) if (a !== b && b.includes(a)) names.delete(a);
+    if (!names.size) for (const [al, set] of aliasIdx) if (t.includes(" " + al + " ")) set.forEach(x => names.add(x));
+    const setTok = [...text.matchAll(/\b(OP|EB|ST|PRB)\s?0?(\d{1,2})\b/gi)].map(m => m[1].toUpperCase() + m[2].padStart(2, "0"));
+    let codes = [];
+    for (const nn of names) nameIdx.get(nn).forEach(c => codes.push(c));
+    if (setTok.length) { const f = codes.filter(c => setTok.some(s => c.startsWith(s + "-"))); if (f.length) codes = f; }
+    const top = c => Math.max(...(byCode.get(c) || []).map(i => i.t));
+    return [...new Set(codes)].sort((a, b) => top(b) - top(a)).slice(0, 8);
+  }
+
+  function keywordHints(text) {
+    const t = " " + norm(text) + " ", h = [];
+    if (/ (alt|aa|alternate|parallel|parallele) /.test(t)) h.push("alt");
+    if (/ (manga) /.test(t)) h.push("manga");
+    if (/ (sp|special) /.test(t)) h.push("SP");
+    if (/ (sec|secret) /.test(t)) h.push("SEC");
+    if (/ (leader) /.test(t)) h.push("leader");
+    if (/ (jp|jap|japonais|japanese|japan) /.test(t)) h.push("JP");
+    if (/ (en|eng|anglais|english) /.test(t)) h.push("EN");
+    return h;
   }
 
   // toutes les versions d'un code (y compris rééditions / promos rattachées à la même carte)
@@ -105,12 +173,107 @@
     for (const c of fresh.concat(found)) {
       recent = [c, ...recent.filter(x => x !== c)].slice(0, 6);
     }
+    const title = titleText();
+    hints = keywordHints(title);
     if (!pinned) {
-      const next = fresh[0] || (current && seenNow.has(current) ? current : found[0]) || current;
-      if (next && next !== current) { current = next; selectedId = null; bidManual = null; }
+      const next = fresh[0] || (current && seenNow.has(current) ? current : found[0]);
+      if (next) {
+        if (next !== current) { current = next; selectedId = null; bidManual = null; visionPref = null; if (hints.includes("JP") || hints.includes("alt")) preselect(); }
+        source = "code"; candidates = [];
+      } else {
+        // pas de code écrit : on cherche un nom de carte dans le titre du lot
+        candidates = codesFromName(title);
+        if (candidates.length === 1 && candidates[0] !== current) {
+          current = candidates[0]; selectedId = null; bidManual = null; visionPref = null; source = "nom";
+          if (hints.includes("JP") || hints.includes("alt")) preselect();
+        } else if (candidates.length > 1 && source !== "image") {
+          if (!candidates.includes(current)) { current = null; selectedId = null; }
+          source = "nom";
+        }
+      }
     }
     bidAuto = detectBid();
+    if (settings.autoVision && !found.length && !visionBusy && Date.now() - lastVisionAt > 10000) identifyImage(true);
     render();
+  }
+
+  // ---------- reconnaissance d'image
+  function biggestVideoRect() {
+    let best = null, area = 0;
+    for (const v of document.querySelectorAll("video")) {
+      const r = v.getBoundingClientRect();
+      const a = Math.max(0, Math.min(r.right, innerWidth) - Math.max(r.left, 0)) * Math.max(0, Math.min(r.bottom, innerHeight) - Math.max(r.top, 0));
+      if (a > area) { area = a; best = r; }
+    }
+    return area > 40000 ? best : null;
+  }
+
+  async function cropShot(dataUrl) {
+    const img = new Image();
+    await new Promise((ok, ko) => { img.onload = ok; img.onerror = ko; img.src = dataUrl; });
+    const k = img.width / innerWidth;
+    const r = biggestVideoRect();
+    let sx = 0, sy = 0, sw = img.width, sh = img.height;
+    if (r) { sx = Math.max(0, r.left * k); sy = Math.max(0, r.top * k); sw = Math.min(img.width - sx, r.width * k); sh = Math.min(img.height - sy, r.height * k); }
+    const scale = Math.min(1, 1280 / Math.max(sw, sh));
+    const c = document.createElement("canvas");
+    c.width = Math.round(sw * scale); c.height = Math.round(sh * scale);
+    c.getContext("2d").drawImage(img, sx, sy, sw, sh, 0, 0, c.width, c.height);
+    const h = document.createElement("canvas"); h.width = h.height = 16;
+    const hc = h.getContext("2d"); hc.drawImage(c, 0, 0, 16, 16);
+    const px = hc.getImageData(0, 0, 16, 16).data, hash = [];
+    for (let i = 0; i < px.length; i += 4) hash.push((px[i] + px[i + 1] + px[i + 2]) / 3);
+    return { b64: c.toDataURL("image/jpeg", 0.85).split(",")[1], hash };
+  }
+  const hashDiff = (a, b) => a.reduce((s, v, i) => s + Math.abs(v - b[i]), 0) / a.length;
+
+  async function identifyImage(auto) {
+    if (!settings.apiKey) { if (!auto) { setStatus("Ajoute ta clé API Claude dans Réglages"); root.querySelector("#settings").open = true; } return; }
+    if (visionBusy) return;
+    visionBusy = true; lastVisionAt = Date.now();
+    try {
+      const shot = await chrome.runtime.sendMessage({ type: "capture" });
+      if (!shot || shot.error) throw new Error(shot ? shot.error : "capture impossible");
+      const img = await cropShot(shot.dataUrl);
+      if (auto && lastHash && hashDiff(img.hash, lastHash) < 12) return;   // image quasi identique : on n'appelle pas Claude
+      lastHash = img.hash;
+      setStatus("Analyse de l'image…");
+      const out = await chrome.runtime.sendMessage({ type: "identify", image: img.b64, context: titleText().slice(0, 600), apiKey: settings.apiKey, model: settings.model });
+      if (!out || out.error) throw new Error(out ? out.error : "pas de réponse");
+      const res = out.res || {};
+      if (!res.visible) { setStatus("Image : aucune carte lisible"); return; }
+      let code = null;
+      if (res.code) { CODE_RE.lastIndex = 0; const m = CODE_RE.exec(res.code); if (m && byCode.has(canonical(m))) code = canonical(m); }
+      const nameCodes = res.name ? codesFromName(res.name + " " + (res.set_guess || "")) : [];
+      if (!code && nameCodes.length === 1) code = nameCodes[0];
+      visionPref = { lang: res.language, alt: res.alt_art, rarity: res.rarity };
+      if (code) {
+        current = code; pinned = true; source = "image"; selectedId = null; bidManual = null; candidates = [];
+        recent = [code, ...recent.filter(x => x !== code)].slice(0, 6);
+        preselect();
+        setStatus(`Image : ${res.name || ""} ${code} (${Math.round((res.confidence || 0) * 100)} %)`);
+      } else if (nameCodes.length) {
+        candidates = nameCodes; current = null; source = "image"; pinned = true;
+        setStatus(`Image : ${res.name} — choisis le code`);
+      } else setStatus(`Image : ${res.name || "carte"} non trouvée dans les prix`);
+      render();
+    } catch (e) {
+      setStatus("Image : " + e.message);
+    } finally { visionBusy = false; }
+  }
+
+  // présélectionne la version d'après la langue et « alt » vus par l'image ou écrits dans le titre
+  function preselect() {
+    const vs = versionsOf(current);
+    const wantJP = visionPref ? visionPref.lang === "JP" : hints.includes("JP");
+    const wantAlt = visionPref && visionPref.alt != null ? visionPref.alt : hints.includes("alt");
+    const prefix = current.split("-")[0];
+    let pool = vs.filter(v => /Asie|JP/.test(v.e) === wantJP && v.e.startsWith(prefix));
+    if (!pool.length) pool = vs.filter(v => /Asie|JP/.test(v.e) === wantJP);
+    if (!pool.length) return;
+    pool.sort((a, b) => a.t - b.t);           // la moins chère = version normale, la suivante = alt
+    const pick = wantAlt ? (pool[1] || pool[0]) : pool[0];
+    selectedId = pick.id;
   }
 
   // enchère affichée : le montant en € écrit le plus gros à l'écran
@@ -168,6 +331,9 @@
     .muted{color:#98a0b5;font-size:11.5px}
     .set{display:grid;grid-template-columns:1fr 1fr;gap:6px} .set label{font-size:11px;color:#98a0b5;display:flex;flex-direction:column;gap:3px}
     details summary{cursor:pointer;color:#98a0b5;font-size:12px}
+    .btn{flex:1;background:#2340c9;color:#fff;border:0;border-radius:8px;padding:8px 10px;font:600 13px system-ui,sans-serif;cursor:pointer}
+    .btn:hover{background:#2f4fe0}
+    .cand{display:flex;flex-direction:column;gap:5px} .cand .chip{font-family:system-ui,sans-serif}
     a{color:#8ea0ff}
   </style>
   <div class="p">
@@ -175,7 +341,9 @@
       <button id="refresh" title="Recharger les prix">↻</button><button id="min" title="Réduire">–</button></div>
     <div class="b" id="body">
       <input id="q" placeholder="Chercher : robin 062, OP09-062, teach…" autocomplete="off">
+      <div class="row"><button id="vision" class="btn">📷 Identifier la carte à l'image</button></div>
       <div class="chips" id="recent"></div>
+      <div id="cands"></div>
       <div id="card"></div>
       <div class="row"><span class="muted" style="white-space:nowrap">Enchère actuelle</span><input id="bid" type="number" inputmode="decimal" step="1" min="0" placeholder="auto"></div>
       <div id="verdict"></div>
@@ -187,9 +355,12 @@
           <label>Port Whatnot par carte €<input id="s-shipIn" type="number" step="0.5"></label>
           <label>Frais acheteur Whatnot %<input id="s-buyFee" type="number" step="0.5"></label>
           <label>Base de prix<select id="s-basis"><option value="safe">Prudente</option><option value="trend">Tendance</option><option value="a30">Moy. 30 j</option></select></label>
+          <label style="grid-column:1 / -1">Clé API Claude (pour l'image)<input id="s-apiKey" type="password" placeholder="sk-ant-…" autocomplete="off"></label>
+          <label>Modèle<select id="s-model"><option value="claude-sonnet-5-5">Précis (Sonnet)</option><option value="claude-haiku-4-5-20251001">Rapide (Haiku)</option></select></label>
+          <label>Image automatique<select id="s-autoVision"><option value="false">Non</option><option value="true">Oui (si pas de code)</option></select></label>
         </div>
       </details>
-      <div class="muted">Le panneau lit les codes écrits à l'écran (titre du lot, chat). Si le vendeur ne l'écrit pas, tape le nom ou le code en haut.</div>
+      <div class="muted">Le panneau lit le code ou le nom de la carte écrits à l'écran. Sinon : bouton 📷 (reconnaissance d'image) ou recherche en haut.</div>
     </div>
   </div>`;
   document.documentElement.appendChild(host);
@@ -225,13 +396,18 @@
         .sort((a, b) => b.t - a.t)[0];
       code = hit ? hit.c : null;
     }
-    if (code) { current = code; pinned = true; selectedId = null; bidManual = null; recent = [code, ...recent.filter(x => x !== code)].slice(0, 6); render(); }
+    if (code) { current = code; pinned = true; source = "recherche"; candidates = []; selectedId = null; bidManual = null; recent = [code, ...recent.filter(x => x !== code)].slice(0, 6); render(); }
     else setStatus("Aucune carte trouvée pour « " + v + " »");
   });
   $("#recent").addEventListener("click", e => {
     const b = e.target.closest("[data-c]"); if (!b) return;
     if (b.dataset.c === "__auto") { pinned = false; scan(); return; }
     current = b.dataset.c; pinned = true; selectedId = null; bidManual = null; render();
+  });
+  $("#vision").addEventListener("click", () => identifyImage(false));
+  $("#cands").addEventListener("click", e => {
+    const b = e.target.closest("[data-c]"); if (!b) return;
+    current = b.dataset.c; pinned = true; selectedId = null; bidManual = null; if (visionPref || hints.length) preselect(); render();
   });
   $("#card").addEventListener("click", e => { const v = e.target.closest("[data-id]"); if (!v) return; selectedId = +v.dataset.id; render(); });
   $("#bid").addEventListener("input", () => { const x = parseFloat($("#bid").value); bidManual = isFinite(x) ? x : null; renderVerdict(); });
@@ -240,7 +416,7 @@
   for (const k of Object.keys(DEFAULTS)) {
     const el = $("#s-" + k);
     el.addEventListener("input", () => {
-      settings[k] = k === "basis" ? el.value : (parseFloat(el.value) || 0);
+      settings[k] = ["basis", "apiKey", "model"].includes(k) ? el.value : k === "autoVision" ? el.value === "true" : (parseFloat(el.value) || 0);
       chrome.storage.local.set({ radarSettings: settings }); render();
     });
   }
@@ -261,9 +437,11 @@
   function render() {
     $("#body").style.display = minimized ? "none" : "flex";
     $("#min").textContent = minimized ? "+" : "–";
-    for (const k of Object.keys(DEFAULTS)) { const el = $("#s-" + k); if (root.activeElement !== el) el.value = settings[k]; }
+    for (const k of Object.keys(DEFAULTS)) { const el = $("#s-" + k); if (root.activeElement !== el) el.value = String(settings[k]); }
     $("#recent").innerHTML = recent.map(c => `<span class="chip ${c === current ? "on" : ""}" data-c="${c}">${c}</span>`).join("")
       + (pinned ? '<span class="chip" data-c="__auto">↺ auto</span>' : "");
+    $("#cands").innerHTML = candidates.length > 1 ? `<div class="cand"><span class="muted">Cartes possibles (lu : ${source === "image" ? "image" : "nom"}${hints.length ? ", " + hints.join(", ") : ""}) — touche la bonne :</span>`
+      + candidates.map(c => { const v = (byCode.get(c) || [])[0]; return `<span class="chip ${c === current ? "on" : ""}" data-c="${c}">${esc(v ? v.n : "")} · ${c}</span>`; }).join("") + "</div>" : "";
     if (root.activeElement !== $("#bid")) $("#bid").value = bidManual != null ? bidManual : "";
     $("#bid").placeholder = bidAuto != null ? `auto : ${bidAuto} €` : "tape l'enchère";
     if (!D || !current) {
@@ -274,7 +452,7 @@
     if (!vs.length) { $("#card").innerHTML = `<div class="muted">${esc(current)} : pas de prix Cardmarket.</div>`; renderVerdict(); return; }
     if (!vs.find(v => v.id === selectedId)) selectedId = null;
     const shown = vs.filter(v => v.t >= 1 || v.id === selectedId).slice(0, 12);
-    $("#card").innerHTML = `<div class="card"><h3>${esc(vs[0].n)}</h3><div class="c">${esc(current)} · ${vs.length} version${vs.length > 1 ? "s" : ""} · touche la version en vente<br>max revente · max pour garder</div></div>`
+    $("#card").innerHTML = `<div class="card"><h3>${esc(vs[0].n)}</h3><div class="c">${esc(current)} · ${vs.length} version${vs.length > 1 ? "s" : ""}${source ? " · trouvé par " + source : ""}${hints.length ? " · " + hints.join(", ") : ""} · touche la version en vente<br>max revente · max pour garder</div></div>`
       + shown.map(v => {
         const mb = maxBid(v), mo = momentum(v);
         const cls = mo == null ? "flat" : mo > 0.02 ? "up" : mo < -0.02 ? "down" : "flat";
