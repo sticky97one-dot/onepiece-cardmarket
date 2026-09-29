@@ -28,3 +28,14 @@ Reconnaissance du nom et de l'image (version 1.1)
   au maximum une fois toutes les 10 secondes et seulement si l'image a changé.
 - Mise à jour depuis la version 1.0 : remplace les fichiers du dossier, puis sur chrome://extensions
   clique sur la flèche ↻ de l'extension. Chrome demandera d'autoriser la capture de l'onglet.
+
+Version 1.2 : langue et avis du radar
+- Toutes les séries sont reconnues : OP, ST, EB, PRB, promos P, par code, nom ou image.
+- Langue : le panneau lit EN / FR (VF) / JP dans le titre ou sur l'image ; tu peux aussi toucher EN, FR ou JP.
+  · JP : prix des produits japonais / Asie de Cardmarket (séparés).
+  · EN : prix du produit international.
+  · FR : Cardmarket vend FR et EN sous le même produit, donc même prix de base avec une décote prudente
+    (15 % par défaut, réglable dans Réglages > Décote cartes FR).
+- Avis du radar sous le verdict : ✅ intéressante (décolle, en retard, en hausse), ➖ neutre, ⛔ à éviter
+  (déjà partie, en chute, prix douteux). Quand l'avis est ⛔, le max « pour garder » est ramené au max revente.
+- 💡 Si la carte est moins chère sur Cardmarket que l'enchère, le panneau te le dit.

@@ -10,7 +10,7 @@
 
   const DATA_URL = "https://raw.githubusercontent.com/sticky97one-dot/onepiece-cardmarket/main/site/data.json";
   const MAX_AGE_MS = 4 * 3600 * 1000;
-  const DEFAULTS = { target: 20, sellFee: 5, shipOut: 0.5, shipIn: 0, buyFee: 0, basis: "safe", apiKey: "", model: "claude-sonnet-5-5", autoVision: false };
+  const DEFAULTS = { target: 20, sellFee: 5, shipOut: 0.5, shipIn: 0, buyFee: 0, basis: "safe", apiKey: "", model: "claude-sonnet-5-5", autoVision: false, frDiscount: 15 };
 
   let D = null, byCode = new Map(), byGroup = new Map();
   let settings = { ...DEFAULTS };
@@ -26,6 +26,7 @@
   let hints = [];              // mots-clés vus (alt, JP, leader…)
   let source = "";             // d'où vient la carte affichée : code, nom, image, recherche
   let visionPref = null;       // {lang, alt} renvoyé par la reconnaissance d'image
+  let lang = null, langSrc = "", langManual = false;   // langue de la carte en vente : EN, FR, JP
   let lastHash = null, lastVisionAt = 0, visionBusy = false;
   const STOP = new Set(["don", "event", "stage", "the", "and", "leader", "card", "pack", "deck"]);
 
@@ -34,7 +35,7 @@
   const pc = v => v == null ? "—" : (v > 0 ? "+" : "") + Math.round(v * 100) + " %";
   const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const norm = s => (s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[.\-\s]+/g, " ").trim();
-  const CODE_RE = /\b(OP|EB|ST|PRB)\s?0?(\d{1,2})\s?[-–—_ ]\s?(\d{3})\b|\bP\s?[-–—]\s?(\d{3})\b/gi;
+  const CODE_RE = /\b(OP|EB|ST|PRB)\s?[-–]?\s?0?(\d{1,2})\s?[-–—_ ]\s?(\d{3})\b|\bP\s?[-–—]\s?(\d{3})\b/gi;
   const MONEY_RE = /^(?:€\s?(\d{1,5}(?:[.,]\d{1,2})?)|(\d{1,5}(?:[.,]\d{1,2})?)\s?€)$/;
 
   function canonical(m) {
@@ -126,8 +127,9 @@
     if (/ (sp|special) /.test(t)) h.push("SP");
     if (/ (sec|secret) /.test(t)) h.push("SEC");
     if (/ (leader) /.test(t)) h.push("leader");
-    if (/ (jp|jap|japonais|japanese|japan) /.test(t)) h.push("JP");
-    if (/ (en|eng|anglais|english) /.test(t)) h.push("EN");
+    if (/ (jp|jap|japonais|japonaise|japanese|japan) /.test(t)) h.push("JP");
+    if (/ (fr|vf|francais|francaise|french) /.test(t)) h.push("FR");
+    if (/ (en|eng|anglais|anglaise|english|va) /.test(t)) h.push("EN");
     return h;
   }
 
@@ -140,20 +142,51 @@
     return out.filter(i => i.k === "S").sort((a, b) => b.t - a.t);
   }
 
+  // ---------- langue
+  const isAsia = i => /Asie|JP/.test(i.e);
+  // Cardmarket : les cartes JP ont leurs propres produits ; FR et EN partagent le même produit (prix mélangés).
+  function langFactor(i) {
+    if (lang === "FR" && !isAsia(i)) return 1 - settings.frDiscount / 100;
+    return 1;
+  }
+  function setLang(l, src) {
+    if (!l || langManual) return;
+    if (l !== lang) { lang = l; langSrc = src; }
+  }
+
   // ---------- calcul
   function resaleOf(i) {
-    if (settings.basis === "trend") return i.t;
-    if (settings.basis === "a30") return i.a30 || i.t;
-    return Math.min(i.t, i.a7 || i.t, i.a1 ? Math.max(i.a1, (i.a7 || i.t) * 0.85) : i.t);
+    let base;
+    if (settings.basis === "trend") base = i.t;
+    else if (settings.basis === "a30") base = i.a30 || i.t;
+    else base = Math.min(i.t, i.a7 || i.t, i.a1 ? Math.max(i.a1, (i.a7 || i.t) * 0.85) : i.t);
+    return base * langFactor(i);
   }
   function maxBid(i) {
     const net = resaleOf(i) * (1 - settings.sellFee / 100) - settings.shipOut;
     const max = (net / (1 + settings.target / 100) - settings.shipIn) / (1 + settings.buyFee / 100);
     // pour garder la carte (investissement) : on accepte de payer jusqu'au prix du marché, sans frais de revente
-    const keep = (resaleOf(i) - settings.shipIn) / (1 + settings.buyFee / 100);
+    let keep = (resaleOf(i) - settings.shipIn) / (1 + settings.buyFee / 100);
+    // radar défavorable (déjà partie, en chute, prix peu fiable) : on ne paie pas plus que le prix « revente »
+    if (verdictRadar(i).level === "bad") keep = max;
     return { max: Math.max(0, max), keep: Math.max(0, keep), resale: resaleOf(i) };
   }
   const momentum = i => i.d7 != null ? i.d7 : i.m;
+
+  // avis du radar sur une version
+  function verdictRadar(i) {
+    const mo = momentum(i), cat = i.cat || [], f = i.f || [];
+    if (f.includes("pic") || f.includes("fantome")) return { level: "bad", text: "Prix Cardmarket douteux (vente isolée ou offre anormale) : n'enchéris pas à l'aveugle." };
+    if (cat.includes("chute") || (mo != null && mo < -0.2)) return { level: "bad", text: `En baisse (${pc(mo)}) : pas intéressante à garder, seulement si c'est une vraie affaire.` };
+    if (mo != null && mo > 0.6) return { level: "bad", text: `Déjà partie (${pc(mo)}) : risque d'acheter au sommet, ne paie pas plus que le max revente.` };
+    if (cat.includes("rattrapage")) return { level: "good", text: "Intéressante : version en retard alors qu'une autre version de la carte a décollé." };
+    if (cat.includes("decollage")) return { level: "good", text: `Intéressante : commence à monter (${pc(mo)}) avec des ventes régulières.` };
+    if (cat.includes("rebond")) return { level: "good", text: "Intéressante : repart à la hausse après une baisse." };
+    if (mo != null && mo >= 0.1) return { level: "good", text: `En hausse (${pc(mo)}) : potentiel si tu restes sous ton max.` };
+    if (f.includes("rare")) return { level: "mid", text: "Peu d'échanges sur Cardmarket : revente lente, prix moins fiable." };
+    if (f.includes("nouveau")) return { level: "mid", text: "Carte récente : les prix baissent souvent les premières semaines." };
+    return { level: "mid", text: "Pas de signal particulier : intéressante seulement sous le max revente." };
+  }
 
   // ---------- lecture de la page
   function scan() {
@@ -175,10 +208,12 @@
     }
     const title = titleText();
     hints = keywordHints(title);
+    const hl = ["JP", "FR", "EN"].filter(x => hints.includes(x));
+    if (hl.length === 1 && langSrc !== "image") setLang(hl[0], "titre");
     if (!pinned) {
       const next = fresh[0] || (current && seenNow.has(current) ? current : found[0]);
       if (next) {
-        if (next !== current) { current = next; selectedId = null; bidManual = null; visionPref = null; if (hints.includes("JP") || hints.includes("alt")) preselect(); }
+        if (next !== current) { current = next; selectedId = null; bidManual = null; visionPref = null; if (!langManual && langSrc !== "titre") lang = null; if (hints.includes("JP") || hints.includes("alt")) preselect(); }
         source = "code"; candidates = [];
       } else {
         // pas de code écrit : on cherche un nom de carte dans le titre du lot
@@ -193,7 +228,7 @@
       }
     }
     bidAuto = detectBid();
-    if (settings.autoVision && !found.length && !visionBusy && Date.now() - lastVisionAt > 10000) identifyImage(true);
+    if (settings.autoVision && (!found.length || !lang) && !visionBusy && Date.now() - lastVisionAt > 10000) identifyImage(true);
     render();
   }
 
@@ -245,15 +280,20 @@
       let code = null;
       if (res.code) { CODE_RE.lastIndex = 0; const m = CODE_RE.exec(res.code); if (m && byCode.has(canonical(m))) code = canonical(m); }
       const nameCodes = res.name ? codesFromName(res.name + " " + (res.set_guess || "")) : [];
+      if (!code && nameCodes.length > 1 && res.rarity && /SEC/i.test(res.rarity)) {
+        const sec = nameCodes.filter(c => +c.split("-")[1] >= 118);
+        if (sec.length === 1) code = sec[0];
+      }
       if (!code && nameCodes.length === 1) code = nameCodes[0];
       visionPref = { lang: res.language, alt: res.alt_art, rarity: res.rarity };
+      if (res.language) setLang(["JP", "CN", "KR"].includes(res.language) ? "JP" : res.language, "image");
       if (code) {
         current = code; pinned = true; source = "image"; selectedId = null; bidManual = null; candidates = [];
         recent = [code, ...recent.filter(x => x !== code)].slice(0, 6);
         preselect();
         setStatus(`Image : ${res.name || ""} ${code} (${Math.round((res.confidence || 0) * 100)} %)`);
       } else if (nameCodes.length) {
-        candidates = nameCodes; current = null; source = "image"; pinned = true;
+        candidates = nameCodes; current = null; selectedId = null; source = "image"; pinned = true;
         setStatus(`Image : ${res.name} — choisis le code`);
       } else setStatus(`Image : ${res.name || "carte"} non trouvée dans les prix`);
       render();
@@ -265,7 +305,7 @@
   // présélectionne la version d'après la langue et « alt » vus par l'image ou écrits dans le titre
   function preselect() {
     const vs = versionsOf(current);
-    const wantJP = visionPref ? visionPref.lang === "JP" : hints.includes("JP");
+    const wantJP = lang === "JP";
     const wantAlt = visionPref && visionPref.alt != null ? visionPref.alt : hints.includes("alt");
     const prefix = current.split("-")[0];
     let pool = vs.filter(v => /Asie|JP/.test(v.e) === wantJP && v.e.startsWith(prefix));
@@ -331,6 +371,8 @@
     .muted{color:#98a0b5;font-size:11.5px}
     .set{display:grid;grid-template-columns:1fr 1fr;gap:6px} .set label{font-size:11px;color:#98a0b5;display:flex;flex-direction:column;gap:3px}
     details summary{cursor:pointer;color:#98a0b5;font-size:12px}
+    .radar{margin-top:6px;border-radius:9px;padding:8px 10px;font-size:12.5px;line-height:1.35}
+    .radar.good{background:#11291e;color:#3fcf86} .radar.bad{background:#331714;color:#ff7a6b} .radar.mid{background:#1c2233;color:#c9cfdd}
     .btn{flex:1;background:#2340c9;color:#fff;border:0;border-radius:8px;padding:8px 10px;font:600 13px system-ui,sans-serif;cursor:pointer}
     .btn:hover{background:#2f4fe0}
     .cand{display:flex;flex-direction:column;gap:5px} .cand .chip{font-family:system-ui,sans-serif}
@@ -344,9 +386,11 @@
       <div class="row"><button id="vision" class="btn">📷 Identifier la carte à l'image</button></div>
       <div class="chips" id="recent"></div>
       <div id="cands"></div>
-      <div id="card"></div>
+      <div class="row" id="langs"><span class="muted">Langue :</span>
+        <span class="chip" data-l="EN">EN</span><span class="chip" data-l="FR">FR</span><span class="chip" data-l="JP">JP</span><span class="muted" id="langsrc"></span></div>
       <div class="row"><span class="muted" style="white-space:nowrap">Enchère actuelle</span><input id="bid" type="number" inputmode="decimal" step="1" min="0" placeholder="auto"></div>
       <div id="verdict"></div>
+      <div id="card"></div>
       <details id="settings"><summary>Réglages (marge, frais)</summary>
         <div class="set" style="margin-top:8px">
           <label>Marge visée %<input id="s-target" type="number" step="1"></label>
@@ -357,6 +401,7 @@
           <label>Base de prix<select id="s-basis"><option value="safe">Prudente</option><option value="trend">Tendance</option><option value="a30">Moy. 30 j</option></select></label>
           <label style="grid-column:1 / -1">Clé API Claude (pour l'image)<input id="s-apiKey" type="password" placeholder="sk-ant-…" autocomplete="off"></label>
           <label>Modèle<select id="s-model"><option value="claude-sonnet-5-5">Précis (Sonnet)</option><option value="claude-haiku-4-5-20251001">Rapide (Haiku)</option></select></label>
+          <label>Décote cartes FR %<input id="s-frDiscount" type="number" step="1"></label>
           <label>Image automatique<select id="s-autoVision"><option value="false">Non</option><option value="true">Oui (si pas de code)</option></select></label>
         </div>
       </details>
@@ -405,6 +450,12 @@
     current = b.dataset.c; pinned = true; selectedId = null; bidManual = null; render();
   });
   $("#vision").addEventListener("click", () => identifyImage(false));
+  $("#langs").addEventListener("click", e => {
+    const b = e.target.closest("[data-l]"); if (!b) return;
+    if (lang === b.dataset.l && langManual) { langManual = false; lang = null; langSrc = ""; }
+    else { lang = b.dataset.l; langManual = true; langSrc = "choisie"; }
+    if (current) preselect(); render();
+  });
   $("#cands").addEventListener("click", e => {
     const b = e.target.closest("[data-c]"); if (!b) return;
     current = b.dataset.c; pinned = true; selectedId = null; bidManual = null; if (visionPref || hints.length) preselect(); render();
@@ -440,6 +491,8 @@
     for (const k of Object.keys(DEFAULTS)) { const el = $("#s-" + k); if (root.activeElement !== el) el.value = String(settings[k]); }
     $("#recent").innerHTML = recent.map(c => `<span class="chip ${c === current ? "on" : ""}" data-c="${c}">${c}</span>`).join("")
       + (pinned ? '<span class="chip" data-c="__auto">↺ auto</span>' : "");
+    root.querySelectorAll("#langs [data-l]").forEach(b => b.classList.toggle("on", b.dataset.l === lang));
+    $("#langsrc").textContent = lang ? `(${langSrc})` : "(inconnue : touche EN, FR ou JP)";
     $("#cands").innerHTML = candidates.length > 1 ? `<div class="cand"><span class="muted">Cartes possibles (lu : ${source === "image" ? "image" : "nom"}${hints.length ? ", " + hints.join(", ") : ""}) — touche la bonne :</span>`
       + candidates.map(c => { const v = (byCode.get(c) || [])[0]; return `<span class="chip ${c === current ? "on" : ""}" data-c="${c}">${esc(v ? v.n : "")} · ${c}</span>`; }).join("") + "</div>" : "";
     if (root.activeElement !== $("#bid")) $("#bid").value = bidManual != null ? bidManual : "";
@@ -451,12 +504,13 @@
     const vs = versionsOf(current);
     if (!vs.length) { $("#card").innerHTML = `<div class="muted">${esc(current)} : pas de prix Cardmarket.</div>`; renderVerdict(); return; }
     if (!vs.find(v => v.id === selectedId)) selectedId = null;
-    const shown = vs.filter(v => v.t >= 1 || v.id === selectedId).slice(0, 12);
+    const match = v => lang ? (lang === "JP") === isAsia(v) : true;
+    const shown = vs.filter(v => v.t >= 1 || v.id === selectedId).sort((a, b) => (match(b) - match(a)) || (b.t - a.t)).slice(0, 12);
     $("#card").innerHTML = `<div class="card"><h3>${esc(vs[0].n)}</h3><div class="c">${esc(current)} · ${vs.length} version${vs.length > 1 ? "s" : ""}${source ? " · trouvé par " + source : ""}${hints.length ? " · " + hints.join(", ") : ""} · touche la version en vente<br>max revente · max pour garder</div></div>`
       + shown.map(v => {
         const mb = maxBid(v), mo = momentum(v);
         const cls = mo == null ? "flat" : mo > 0.02 ? "up" : mo < -0.02 ? "down" : "flat";
-        return `<div class="v ${v.id === selectedId ? "on" : ""}" data-id="${v.id}">
+        return `<div class="v ${v.id === selectedId ? "on" : ""}" data-id="${v.id}" style="${match(v) ? "" : "opacity:.45"}">
           <div class="e">${esc(v.e)}${v.v ? " · V" + v.v : ""}</div><div class="mx" title="revente / garder">${eur(mb.max)} · ${eur(mb.keep)}</div>
           <div class="d"><span>marché ${eur(v.t)}</span><span>ventes 7 j ${eur(v.a7)}</span><span class="${cls}">${pc(mo)}</span>${tags(v)}</div></div>`;
       }).join("");
@@ -466,7 +520,7 @@
   function renderVerdict() {
     const el = $("#verdict");
     const bid = bidManual != null ? bidManual : bidAuto;
-    const v = D && selectedId ? D.items.find(i => i.id === selectedId) : null;
+    const v = D && selectedId && current ? D.items.find(i => i.id === selectedId && i.c === current) : null;
     if (!v) { el.innerHTML = current ? '<div class="verdict none"><div class="big">Quelle version ?</div><div class="l">Touche la version annoncée (alt, normale, JP…)</div></div>' : ""; return; }
     const mb = maxBid(v);
     let c, t;
@@ -475,13 +529,22 @@
     else if (bid <= mb.max) { c = "good"; t = "Bonne affaire"; }
     else if (bid <= mb.keep) { c = "mid"; t = "OK pour garder, pas pour revendre"; }
     else { c = "bad"; t = "Trop cher, stop"; }
-    const risky = (v.f || []).some(f => ["pic", "fantome", "rare"].includes(f));
+    const risky = false;
+    const rv = verdictRadar(v);
+    const notes = [];
+    if (lang === "FR" && !isAsia(v)) notes.push(`Carte FR : Cardmarket mélange FR et EN dans le même prix, décote prudente de ${settings.frDiscount} % appliquée.`);
+    if (lang === "JP" && !isAsia(v)) notes.push("⚠ Carte JP mais version EN sélectionnée : choisis la ligne Asie/JP.");
+    if ((lang === "EN" || lang === "FR") && isAsia(v)) notes.push("⚠ Carte EN/FR mais version Asie/JP sélectionnée.");
+    if (!lang) notes.push("Langue inconnue : touche EN, FR ou JP pour un prix juste.");
+    if (v.lo && bid != null && bid > v.lo * langFactor(v)) notes.push(`💡 Sur Cardmarket, la moins chère est à ${eur(v.lo)} (hors port, vérifier état et langue) : pas la peine de payer plus ici.`);
     el.innerHTML = `<div class="verdict ${c}"><div class="big">${t}</div>
       <div class="l">Pour revendre (${settings.target} % de marge) : <b>≤ ${eur(mb.max)}</b></div>
       <div class="l">Pour garder / investir : <b>≤ ${eur(mb.keep)}</b></div>
       <div class="l">Valeur Cardmarket retenue : ${eur(mb.resale)}</div>
       ${bid != null ? `<div class="l">Enchère actuelle : ${eur(bid)}</div>` : ""}
-      ${risky ? '<div class="l">⚠ Prix Cardmarket peu fiable pour cette version : prudence.</div>' : ""}</div>`;
+      </div>
+      <div class="radar ${rv.level}">${rv.level === "good" ? "✅" : rv.level === "bad" ? "⛔" : "➖"} ${esc(rv.text)}</div>
+      ${notes.map(n => `<div class="muted">${esc(n)}</div>`).join("")}`;
   }
 
   loadData(false).then(() => { scan(); setInterval(scan, 1500); });

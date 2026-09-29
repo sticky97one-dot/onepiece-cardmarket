@@ -1,8 +1,12 @@
 // Service worker : capture de l'onglet Whatnot et identification de la carte par Claude (vision).
-const PROMPT = `Cette image est extraite d'un live de vente de cartes (Whatnot). Identifie la carte du jeu "One Piece Card Game" que le vendeur montre au premier plan.
+const PROMPT = `Cette image est extraite d'un live de vente de cartes (Whatnot). Identifie la carte du jeu "One Piece Card Game" (Bandai) que le vendeur montre au premier plan. Toutes les séries sont possibles : boosters OP, starter decks ST, extra boosters EB, premium boosters PRB, promos P, cartes DON!!.
 Réponds UNIQUEMENT avec un objet JSON, sans texte autour :
-{"visible": true/false, "name": "nom du personnage tel qu'écrit sur la carte (en anglais si possible)", "code": "code imprimé en bas à droite, ex. OP09-062, ou null si illisible", "set_guess": "ex. OP09 ou null", "alt_art": true/false/null, "language": "EN" | "JP" | null, "rarity": "L, C, UC, R, SR, SEC, SP, manga, ou null", "confidence": nombre entre 0 et 1}
-Règles : ne devine pas un code que tu ne lis pas ; "alt_art" = illustration alternative / parallèle (illustration qui déborde du cadre, style différent de la version normale) ; "language" = JP si le texte de la carte est en japonais. Si aucune carte One Piece n'est clairement visible, renvoie {"visible": false}.
+{"visible": true/false, "name": "nom du personnage en anglais (ex. Nico Robin, Marshall.D.Teach) ; si tu ne le connais pas, tel qu'écrit", "code": "code imprimé en bas à droite, ex. OP09-062, ST01-012, EB02-010, P-001, ou null si illisible", "set_guess": "ex. OP09 ou null", "alt_art": true/false/null, "language": "EN" | "FR" | "JP" | "CN" | "KR" | null, "rarity": "L, C, UC, R, SR, SEC, SP, TR, manga, ou null", "confidence": nombre entre 0 et 1}
+Règles :
+- Lis le code imprimé avec soin (lettres + chiffres). Ne l'invente pas : null si tu ne le lis pas.
+- "alt_art" = version parallèle / illustration alternative (illustration qui déborde du cadre, style différent, souvent brillante).
+- "language" : langue du texte imprimé sur la carte (effet, type). FR = français, EN = anglais, JP = japonais, CN = chinois, KR = coréen.
+- Si aucune carte One Piece n'est clairement visible, renvoie {"visible": false}.
 Texte affiché sur la page (peut aider, peut aussi ne rien avoir à voir) : `;
 
 async function identify({ image, context, apiKey, model }) {
