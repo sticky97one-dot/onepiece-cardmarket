@@ -10,7 +10,7 @@
 
   const DATA_URL = "https://raw.githubusercontent.com/sticky97one-dot/onepiece-cardmarket/main/site/data.json";
   const MAX_AGE_MS = 4 * 3600 * 1000;
-  const DEFAULTS = { target: 20, sellFee: 5, shipOut: 0.5, shipIn: 0, buyFee: 0, basis: "safe", apiKey: "", model: "claude-sonnet-5-5", autoVision: false, frDiscount: 15 };
+  const DEFAULTS = { target: 20, sellFee: 5, shipOut: 0.5, shipIn: 0, buyFee: 0, basis: "safe", apiKey: "", model: "claude-sonnet-5-5", autoVision: false, frDiscount: 15, cmShip: 1.5 };
 
   let D = null, byCode = new Map(), byGroup = new Map();
   let settings = { ...DEFAULTS };
@@ -160,6 +160,8 @@
     if (settings.basis === "trend") base = i.t;
     else if (settings.basis === "a30") base = i.a30 || i.t;
     else base = Math.min(i.t, i.a7 || i.t, i.a1 ? Math.max(i.a1, (i.a7 || i.t) * 0.85) : i.t);
+    // la valeur ne dépasse jamais l'offre la moins chère sur Cardmarket (ignorée si < 50 % : carte abîmée probable)
+    if (i.lo && i.lo >= 0.5 * base) base = Math.min(base, i.lo);
     return base * langFactor(i);
   }
   function maxBid(i) {
@@ -167,6 +169,8 @@
     const max = (net / (1 + settings.target / 100) - settings.shipIn) / (1 + settings.buyFee / 100);
     // pour garder la carte (investissement) : on accepte de payer jusqu'au prix du marché, sans frais de revente
     let keep = (resaleOf(i) - settings.shipIn) / (1 + settings.buyFee / 100);
+    // jamais plus cher que l'acheter directement sur Cardmarket (offre la moins chère + port)
+    if (i.lo) keep = Math.min(keep, i.lo * langFactor(i) + settings.cmShip);
     // radar défavorable (déjà partie, en chute, prix peu fiable) : on ne paie pas plus que le prix « revente »
     if (verdictRadar(i).level === "bad") keep = max;
     return { max: Math.max(0, max), keep: Math.max(0, keep), resale: resaleOf(i) };
@@ -183,6 +187,7 @@
     if (cat.includes("decollage")) return { level: "good", text: `Intéressante : commence à monter (${pc(mo)}) avec des ventes régulières.` };
     if (cat.includes("rebond")) return { level: "good", text: "Intéressante : repart à la hausse après une baisse." };
     if (mo != null && mo >= 0.1) return { level: "good", text: `En hausse (${pc(mo)}) : potentiel si tu restes sous ton max.` };
+    if (resaleOf(i) < 5) return { level: "bad", text: "Carte à moins de 5 € : les frais et le port mangent la marge, intéressante seulement dans un lot." };
     if (f.includes("rare")) return { level: "mid", text: "Peu d'échanges sur Cardmarket : revente lente, prix moins fiable." };
     if (f.includes("nouveau")) return { level: "mid", text: "Carte récente : les prix baissent souvent les premières semaines." };
     return { level: "mid", text: "Pas de signal particulier : intéressante seulement sous le max revente." };
@@ -401,6 +406,7 @@
           <label>Base de prix<select id="s-basis"><option value="safe">Prudente</option><option value="trend">Tendance</option><option value="a30">Moy. 30 j</option></select></label>
           <label style="grid-column:1 / -1">Clé API Claude (pour l'image)<input id="s-apiKey" type="password" placeholder="sk-ant-…" autocomplete="off"></label>
           <label>Modèle<select id="s-model"><option value="claude-sonnet-5-5">Précis (Sonnet)</option><option value="claude-haiku-4-5-20251001">Rapide (Haiku)</option></select></label>
+          <label>Port Cardmarket €<input id="s-cmShip" type="number" step="0.1"></label>
           <label>Décote cartes FR %<input id="s-frDiscount" type="number" step="1"></label>
           <label>Image automatique<select id="s-autoVision"><option value="false">Non</option><option value="true">Oui (si pas de code)</option></select></label>
         </div>
@@ -540,7 +546,7 @@
     el.innerHTML = `<div class="verdict ${c}"><div class="big">${t}</div>
       <div class="l">Pour revendre (${settings.target} % de marge) : <b>≤ ${eur(mb.max)}</b></div>
       <div class="l">Pour garder / investir : <b>≤ ${eur(mb.keep)}</b></div>
-      <div class="l">Valeur Cardmarket retenue : ${eur(mb.resale)}</div>
+      <div class="l">Valeur retenue : ${eur(mb.resale)} (la plus basse entre tendance, ventes 7 j et offre la moins chère${v.lo ? " " + eur(v.lo) : ""})</div>
       ${bid != null ? `<div class="l">Enchère actuelle : ${eur(bid)}</div>` : ""}
       </div>
       <div class="radar ${rv.level}">${rv.level === "good" ? "✅" : rv.level === "bad" ? "⛔" : "➖"} ${esc(rv.text)}</div>

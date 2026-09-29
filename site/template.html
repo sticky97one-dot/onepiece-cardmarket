@@ -144,7 +144,7 @@ footer{margin-top:26px;color:var(--muted);font-size:12.5px;max-width:70ch}
             <label class="f" for="target">Marge visée (%)<input id="target" type="number" inputmode="decimal" step="1" min="0" value="25"></label>
             <label class="f" for="basis">Base de revente
               <select id="basis">
-                <option value="safe">Prudente (min tendance / moy. 7 j)</option>
+                <option value="safe">Prudente (min tendance / moy. 7 j / offre la moins chère)</option>
                 <option value="trend">Prix tendance</option>
                 <option value="a30">Moyenne 30 j</option>
                 <option value="low">Prix le plus bas</option>
@@ -299,7 +299,8 @@ let selected = null, resaleTouched = false;
 function basisPrice(i){
   const b=$('#basis').value;
   if(b==='trend') return i.t; if(b==='a30') return i.a30||i.t; if(b==='low') return i.lo||i.t;
-  return Math.min(i.t, i.a7||i.t);
+  const b = Math.min(i.t, i.a7||i.t);
+  return (i.lo && i.lo >= 0.5*b) ? Math.min(b, i.lo) : b;
 }
 function selectCard(i){
   selected=i; resaleTouched=false;

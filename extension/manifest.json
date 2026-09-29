@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Radar Whatnot One Piece",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Pendant un live Whatnot, repère la carte One Piece en vente et affiche jusqu'où enchérir d'après les prix Cardmarket du jour.",
   "permissions": [
     "storage"
