@@ -1,0 +1,332 @@
+<title>Radar One Piece</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;800&family=Archivo+Narrow:wght@600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout : console de marché compacte — barre d'onglets fixe, listes denses scannables, calculateur Whatnot pensé pour le téléphone */
+:root{
+  --bg:#f3f4f7; --panel:#ffffff; --ink:#141824; --muted:#5d6477; --line:#dde0e8;
+  --accent:#2340c9; --accent-soft:#e6eafb;
+  --up:#0f8a4b; --up-soft:#e2f4ea; --down:#c73a2e; --down-soft:#fbe7e4; --warn:#a86500; --warn-soft:#fbf0dc;
+  --f-display:"Archivo Narrow","Arial Narrow",system-ui,sans-serif;
+  --f-body:"Archivo",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-num:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0e1118; --panel:#161b26; --ink:#e8ebf3; --muted:#98a0b5; --line:#262d3d;
+  --accent:#7d93ff; --accent-soft:#1d2544;
+  --up:#3fcf86; --up-soft:#11291e; --down:#ff7a6b; --down-soft:#331714; --warn:#f0b04a; --warn-soft:#2e230f; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0e1118; --panel:#161b26; --ink:#e8ebf3; --muted:#98a0b5; --line:#262d3d;
+  --accent:#7d93ff; --accent-soft:#1d2544;
+  --up:#3fcf86; --up-soft:#11291e; --down:#ff7a6b; --down-soft:#331714; --warn:#f0b04a; --warn-soft:#2e230f; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.45}
+.wrap{max-width:980px;margin:0 auto;padding-inline:16px;padding-block:18px 96px}
+header.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:8px 16px;margin-bottom:14px}
+h1{font-family:var(--f-display);font-weight:700;font-size:clamp(26px,5vw,34px);letter-spacing:.01em;margin:0;line-height:1;text-wrap:balance}
+h1 b{color:var(--accent)}
+.meta{font-size:12.5px;color:var(--muted);font-family:var(--f-num)}
+.banner{background:var(--warn-soft);color:var(--warn);border-radius:var(--r);padding:10px 12px;font-size:13.5px;margin-bottom:14px}
+nav.tabs{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);display:flex;gap:4px;padding-block:6px 10px;border-bottom:1px solid var(--line);margin-bottom:14px}
+nav.tabs button{flex:1;font:600 14px var(--f-body);border:0;background:transparent;color:var(--muted);padding:9px 6px;border-radius:8px;cursor:pointer}
+nav.tabs button[aria-selected="true"]{background:var(--ink);color:var(--bg)}
+button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;margin-bottom:6px;scrollbar-width:none}
+.chip{flex:none;font:600 13px var(--f-body);border:1px solid var(--line);background:var(--panel);color:var(--ink);padding:7px 11px;border-radius:999px;cursor:pointer;display:flex;gap:6px;align-items:center}
+.chip .n{font-family:var(--f-num);font-weight:400;color:var(--muted);font-size:12px}
+.chip[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
+.hint{color:var(--muted);font-size:13.5px;margin:4px 0 12px;max-width:68ch}
+.list{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:var(--r);background:var(--panel);overflow:hidden}
+.row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;padding:12px 14px;border-top:1px solid var(--line)}
+.row:first-child{border-top:0}
+.row .name{font-weight:600;min-width:0}
+.row .name small{font-weight:400;color:var(--muted);font-family:var(--f-num);font-size:12px;margin-left:4px}
+.row .sub{grid-column:1;color:var(--muted);font-size:12.5px;min-width:0}
+.row .px{text-align:right;font-family:var(--f-num);font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+.row .right{grid-column:2;grid-row:2 / span 2;display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+.row .why{grid-column:1;font-size:12.5px;display:flex;flex-wrap:wrap;gap:4px 10px;color:var(--ink);min-width:0}
+.row .why span::before{content:"· ";color:var(--muted)}
+.row a.cm{font-size:12px;color:var(--accent);text-decoration:none;font-weight:600}
+.pill{font:600 12px var(--f-num);padding:2px 7px;border-radius:6px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.up{color:var(--up);background:var(--up-soft)} .down{color:var(--down);background:var(--down-soft)} .flat{color:var(--muted);background:var(--bg)}
+.tag{font:600 11px var(--f-body);letter-spacing:.04em;text-transform:uppercase;padding:2px 6px;border-radius:5px;background:var(--warn-soft);color:var(--warn)}
+.score{display:inline-flex;align-items:center;gap:6px;font:600 12px var(--f-num)}
+.score i{display:block;width:44px;height:6px;border-radius:3px;background:var(--line);position:relative;overflow:hidden}
+.score i::after{content:"";position:absolute;inset:0;width:var(--w);background:var(--accent);border-radius:3px}
+svg.spark{display:block}
+.empty{padding:22px 14px;color:var(--muted);text-align:center}
+/* calculateur */
+.calc{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
+@media (max-width:720px){.calc{grid-template-columns:minmax(0,1fr)}}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:14px}
+.panel h2{font:700 13px var(--f-display);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 10px}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:12.5px;color:var(--muted);font-weight:500}
+input,select{font:500 16px var(--f-body);color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px 11px;width:100%;min-width:0}
+input.big{font:600 22px var(--f-num)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.sugg{border:1px solid var(--line);border-radius:8px;margin-top:6px;max-height:260px;overflow:auto;background:var(--panel)}
+.sugg button{display:flex;justify-content:space-between;gap:10px;width:100%;text-align:left;border:0;border-top:1px solid var(--line);background:transparent;color:var(--ink);padding:9px 10px;font:14px var(--f-body);cursor:pointer}
+.sugg button:first-child{border-top:0}
+.sugg button:hover{background:var(--accent-soft)}
+.sugg small{color:var(--muted);font-family:var(--f-num)}
+.card-sel{margin-top:12px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.stat{background:var(--bg);border-radius:8px;padding:8px}
+.stat b{display:block;font:600 15px var(--f-num);font-variant-numeric:tabular-nums}
+.stat span{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.verdict{border-radius:var(--r);padding:16px;margin-bottom:12px}
+.verdict .big{font:800 30px var(--f-display);line-height:1.05}
+.verdict .line{font-family:var(--f-num);font-size:14px;margin-top:6px}
+.v-good{background:var(--up-soft);color:var(--up)} .v-mid{background:var(--warn-soft);color:var(--warn)} .v-bad{background:var(--down-soft);color:var(--down)} .v-none{background:var(--bg);color:var(--muted)}
+table.breakdown{width:100%;border-collapse:collapse;font-size:13.5px}
+table.breakdown td{padding:6px 0;border-top:1px solid var(--line)}
+table.breakdown td:last-child{text-align:right;font-family:var(--f-num);font-variant-numeric:tabular-nums}
+details{margin-top:12px} summary{cursor:pointer;font-weight:600;font-size:13.5px}
+.srch{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.srch input{flex:1 1 220px} .srch select{flex:0 1 190px}
+footer{margin-top:26px;color:var(--muted);font-size:12.5px;max-width:70ch}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <h1>Radar <b>One Piece</b></h1>
+    <div class="meta" id="meta"></div>
+  </header>
+  <div class="banner" id="banner" hidden></div>
+
+  <nav class="tabs" role="tablist">
+    <button role="tab" id="t-radar" aria-selected="true" data-tab="radar">Radar</button>
+    <button role="tab" id="t-whatnot" aria-selected="false" data-tab="whatnot">Whatnot</button>
+    <button role="tab" id="t-search" aria-selected="false" data-tab="search">Catalogue</button>
+  </nav>
+
+  <section id="radar">
+    <div class="chips" id="chips"></div>
+    <p class="hint" id="hint"></p>
+    <div class="list" id="radarList"></div>
+  </section>
+
+  <section id="whatnot" hidden>
+    <div class="calc">
+      <div class="panel">
+        <h2>La carte en vente</h2>
+        <label class="f" for="q">Nom ou code (ex. OP05-119, Luffy)
+          <input id="q" type="search" autocomplete="off" placeholder="Chercher une carte…">
+        </label>
+        <div class="sugg" id="sugg" hidden></div>
+        <div id="sel"></div>
+        <div class="grid2" style="margin-top:12px">
+          <label class="f" for="bid">Enchère actuelle (€)
+            <input id="bid" class="big" type="number" inputmode="decimal" step="0.5" min="0" value="20">
+          </label>
+          <label class="f" for="resale">Revente estimée (€)
+            <input id="resale" class="big" type="number" inputmode="decimal" step="0.5" min="0" value="">
+          </label>
+        </div>
+        <details>
+          <summary>Frais et objectif</summary>
+          <div class="grid2" style="margin-top:10px">
+            <label class="f" for="shipIn">Port Whatnot payé (€)<input id="shipIn" type="number" inputmode="decimal" step="0.1" min="0" value="4"></label>
+            <label class="f" for="buyFee">Frais acheteur Whatnot (%)<input id="buyFee" type="number" inputmode="decimal" step="0.5" min="0" value="0"></label>
+            <label class="f" for="sellFee">Commission Cardmarket (%)<input id="sellFee" type="number" inputmode="decimal" step="0.5" min="0" value="5"></label>
+            <label class="f" for="shipOut">Envoi à ta charge (€)<input id="shipOut" type="number" inputmode="decimal" step="0.1" min="0" value="0.5"></label>
+            <label class="f" for="target">Marge visée (%)<input id="target" type="number" inputmode="decimal" step="1" min="0" value="25"></label>
+            <label class="f" for="basis">Base de revente
+              <select id="basis">
+                <option value="safe">Prudente (min tendance / moy. 7 j)</option>
+                <option value="trend">Prix tendance</option>
+                <option value="a30">Moyenne 30 j</option>
+                <option value="low">Prix le plus bas</option>
+              </select>
+            </label>
+          </div>
+        </details>
+      </div>
+      <div>
+        <div class="verdict v-none" id="verdict"><div class="big">Choisis une carte</div><div class="line">ou tape directement un prix de revente</div></div>
+        <div class="panel">
+          <h2>Le détail</h2>
+          <table class="breakdown" id="breakdown"></table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="search" hidden>
+    <div class="srch">
+      <input id="sq" type="search" placeholder="Filtrer par nom, code ou extension…" autocomplete="off">
+      <select id="ssort">
+        <option value="s">Tri : score de potentiel</option>
+        <option value="d7">Tri : hausse 7 j</option>
+        <option value="m">Tri : moy. 7 j vs 30 j</option>
+        <option value="t">Tri : prix</option>
+      </select>
+      <select id="smin">
+        <option value="0">Tous les prix</option>
+        <option value="2" selected>≥ 2 €</option>
+        <option value="10">≥ 10 €</option>
+        <option value="50">≥ 50 €</option>
+      </select>
+    </div>
+    <div class="list" id="searchList"></div>
+  </section>
+
+  <footer>Données : guide des prix quotidien public de Cardmarket (tendance, prix le plus bas, moyennes de vente 1, 7 et 30 jours). Le score combine la dynamique des prix, la tension des offres et la régularité des ventes. Ce sont des indices, pas des certitudes : vérifie toujours les offres réelles et les ventes récentes avant d'acheter.</footer>
+</div>
+
+<script type="application/json" id="data">/*DATA*/</script>
+<script>
+(function(){
+const D = JSON.parse(document.getElementById('data').textContent);
+const byId = new Map(D.items.map(i=>[i.id,i]));
+const $ = s=>document.querySelector(s);
+const eur = v => v==null ? '—' : (v>=100 ? v.toFixed(0) : v.toFixed(2)).replace('.',',')+' €';
+const pc = v => v==null ? '—' : (v>0?'+':'')+Math.round(v*100)+' %';
+const cls = v => v==null ? 'flat' : v>0.02 ? 'up' : v<-0.02 ? 'down' : 'flat';
+const esc = s => String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const store = { get(k,d){try{const v=localStorage.getItem('rop.'+k);return v==null?d:JSON.parse(v)}catch(e){return d}}, set(k,v){try{localStorage.setItem('rop.'+k,JSON.stringify(v))}catch(e){}} };
+
+$('#meta').textContent = `Prix Cardmarket du ${new Date(D.priceDate).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'})} · ${D.counts.produits.toLocaleString('fr-FR')} produits · historique ${D.historyDays} j`;
+if (D.sample) { $('#banner').hidden=false; $('#banner').textContent = "Données d'exemple : le tableau se remplira avec les vrais prix Cardmarket dès que la collecte quotidienne sera branchée."; }
+else if (D.historyDays < 7) { $('#banner').hidden=false; $('#banner').textContent = `Historique en construction (${D.historyDays} jour${D.historyDays>1?'s':''}) : les signaux s'appuient pour l'instant sur les moyennes 1, 7 et 30 jours de Cardmarket, et deviendront plus fins chaque jour.`; }
+
+function label(i){ return `${esc(i.n)}<small>${esc(i.c||'')}${i.v?' V'+i.v:''}</small>`; }
+function cmUrl(i){ return 'https://www.cardmarket.com/fr/OnePiece/Products/Search?searchString='+encodeURIComponent(i.c ? i.c : i.n); }
+function spark(h){
+  if(!h || h.length<2) return '';
+  const w=72,hh=22,mn=Math.min(...h),mx=Math.max(...h),r=(mx-mn)||1;
+  const pts=h.map((v,k)=>[k/(h.length-1)*w, hh-2-(v-mn)/r*(hh-4)]);
+  const d=pts.map((p,k)=>(k?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' ');
+  const col = h[h.length-1]>=h[0] ? 'var(--up)' : 'var(--down)';
+  const last=pts[pts.length-1];
+  return `<svg class="spark" width="${w}" height="${hh}" viewBox="0 0 ${w} ${hh}" aria-hidden="true"><path d="${d} L${w} ${hh} L0 ${hh} Z" fill="${col}" opacity=".12"/><path d="${d}" fill="none" stroke="${col}" stroke-width="1.6"/><circle cx="${last[0]}" cy="${last[1]}" r="2.2" fill="${col}"/></svg>`;
+}
+function row(i){
+  const chg = i.d7!=null ? i.d7 : i.m;
+  const tags = (i.f||[]).map(f=>`<span class="tag">${{pic:'Pic isolé',fantome:'Prix bas suspect',nouveau:'Nouveauté'}[f]||f}</span>`).join(' ');
+  return `<div class="row">
+    <div class="name">${label(i)}</div>
+    <div class="px">${eur(i.t)}</div>
+    <div class="sub">${esc(i.e)}${i.k==='N'?' · scellé':''} · bas ${eur(i.lo)} · 7 j ${eur(i.a7)} · 30 j ${eur(i.a30)}</div>
+    <div class="right"><span class="pill ${cls(chg)}">${pc(chg)} ${i.d7!=null?'7 j':'7/30'}</span>${spark(i.h)}</div>
+    <div class="why">${tags}${(i.r||[]).map(r=>`<span>${esc(r)}</span>`).join('')}</div>
+    <div class="sub" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap"><span class="score" title="Score de potentiel">score ${i.s}<i style="--w:${i.s}%"></i></span><a class="cm" href="${cmUrl(i)}" target="_blank" rel="noopener">Voir sur Cardmarket ↗</a><a class="cm" href="#whatnot" data-calc="${i.id}">Calculer une marge</a></div>
+  </div>`;
+}
+function renderList(el, ids){ el.innerHTML = ids.length ? ids.map(id=>row(byId.get(id))).join('') : '<div class="empty">Rien dans cette catégorie aujourd\'hui.</div>'; }
+
+// ---- Radar
+const CATS = [
+  ['decollage','Décollage',"Cartes qui commencent à monter avec des ventes régulières et des offres qui se raréfient : le meilleur moment pour se positionner."],
+  ['rebond','Rebond',"Cartes retombées sous leur moyenne 30 jours qui se revendent à nouveau plus cher : possible point bas."],
+  ['flambee','Déjà partie',"Hausse très forte déjà faite : risque d'acheter au sommet. À surveiller plutôt qu'à acheter."],
+  ['scelle','Scellé',"Displays et boosters de plus de 10 €, classés par potentiel."],
+  ['chute','En chute',"Baisse nette sur 7 et 30 jours : à éviter, ou à guetter pour racheter bas."],
+  ['piege','Pièges',"Prix trompeurs : vente isolée qui gonfle la moyenne, ou prix le plus bas anormalement faible."],
+];
+let cat = store.get('cat','decollage');
+function renderChips(){
+  $('#chips').innerHTML = CATS.map(([k,l])=>`<button class="chip" aria-pressed="${k===cat}" data-cat="${k}">${l}<span class="n">${(D.lists[k]||[]).length}</span></button>`).join('');
+  const c = CATS.find(c=>c[0]===cat) || CATS[0];
+  $('#hint').textContent = c[2];
+  renderList($('#radarList'), D.lists[c[0]]||[]);
+}
+$('#chips').addEventListener('click',e=>{const b=e.target.closest('[data-cat]'); if(!b) return; cat=b.dataset.cat; store.set('cat',cat); renderChips();});
+renderChips();
+
+// ---- Tabs
+function showTab(t){
+  document.querySelectorAll('nav.tabs button').forEach(b=>b.setAttribute('aria-selected', b.dataset.tab===t));
+  ['radar','whatnot','search'].forEach(s=>$('#'+s).hidden = s!==t);
+  store.set('tab',t);
+}
+document.querySelector('nav.tabs').addEventListener('click',e=>{const b=e.target.closest('[data-tab]'); if(b) showTab(b.dataset.tab);});
+const h0 = location.hash.replace('#','');
+showTab(['radar','whatnot','search'].includes(h0) ? h0 : store.get('tab','radar'));
+
+// ---- Recherche
+const norm = s => (s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[.\-\s]+/g,' ').trim();
+D.items.forEach(i=>{ i._q = norm(`${i.n} ${i.c} ${i.e} ${i.c.replace('-','')}`); });
+function find(q, n){
+  const t = norm(q).split(' ').filter(Boolean); if(!t.length) return [];
+  return D.items.filter(i=>t.every(w=>i._q.includes(w))).sort((a,b)=>b.t-a.t).slice(0,n);
+}
+function renderSearch(){
+  const q=$('#sq').value, key=$('#ssort').value, mn=+$('#smin').value;
+  let arr = q.trim() ? find(q, 5000) : D.items.slice();
+  arr = arr.filter(i=>i.t>=mn);
+  const val = i => key==='d7' ? (i.d7!=null?i.d7:(i.m??-9)) : (i[key] ?? -9);
+  arr.sort((a,b)=>val(b)-val(a));
+  const shown = arr.slice(0,80);
+  $('#searchList').innerHTML = shown.length ? shown.map(row).join('') + (arr.length>80?`<div class="empty">${arr.length-80} autres résultats : affine la recherche.</div>`:'') : '<div class="empty">Aucune carte ne correspond.</div>';
+}
+['#sq','#ssort','#smin'].forEach(s=>$(s).addEventListener('input',renderSearch));
+renderSearch();
+
+// ---- Calculateur Whatnot
+const F = ['bid','resale','shipIn','buyFee','sellFee','shipOut','target','basis'];
+const saved = store.get('calc',{});
+['shipIn','buyFee','sellFee','shipOut','target','basis'].forEach(k=>{ if(saved[k]!=null) $('#'+k).value=saved[k]; });
+let selected = null, resaleTouched = false;
+function basisPrice(i){
+  const b=$('#basis').value;
+  if(b==='trend') return i.t; if(b==='a30') return i.a30||i.t; if(b==='low') return i.lo||i.t;
+  return Math.min(i.t, i.a7||i.t);
+}
+function selectCard(i){
+  selected=i; resaleTouched=false;
+  $('#q').value = `${i.n} ${i.c}${i.v?' V'+i.v:''}`; $('#sugg').hidden=true;
+  $('#sel').innerHTML = `<div class="card-sel">
+    <div class="stat"><span>Tendance</span><b>${eur(i.t)}</b></div>
+    <div class="stat"><span>Plus bas</span><b>${eur(i.lo)}</b></div>
+    <div class="stat"><span>Moy. 7 j</span><b>${eur(i.a7)}</b></div>
+    <div class="stat"><span>Moy. 30 j</span><b>${eur(i.a30)}</b></div></div>
+    <div class="sub" style="margin-top:8px;font-size:12.5px;color:var(--muted)">${esc(i.e)} · 7 j <span class="pill ${cls(i.d7??i.m)}">${pc(i.d7??i.m)}</span> · score ${i.s}${(i.f||[]).includes('fantome')?' · <span class="tag">Prix bas suspect</span>':''}${(i.f||[]).includes('pic')?' · <span class="tag">Pic isolé</span>':''} · <a class="cm" href="${cmUrl(i)}" target="_blank" rel="noopener">Cardmarket ↗</a></div>`;
+  $('#resale').value = basisPrice(i).toFixed(2);
+  calc();
+}
+$('#q').addEventListener('input',()=>{
+  const r = find($('#q').value, 12);
+  $('#sugg').hidden = !r.length;
+  $('#sugg').innerHTML = r.map(i=>`<button type="button" data-id="${i.id}"><span>${esc(i.n)} <small>${esc(i.c)}${i.v?' V'+i.v:''}</small><br><small>${esc(i.e)}</small></span><small>${eur(i.t)}</small></button>`).join('');
+});
+$('#sugg').addEventListener('click',e=>{const b=e.target.closest('[data-id]'); if(b) selectCard(byId.get(+b.dataset.id));});
+$('#resale').addEventListener('input',()=>{resaleTouched=true; calc();});
+$('#basis').addEventListener('change',()=>{ if(selected && !resaleTouched) $('#resale').value=basisPrice(selected).toFixed(2); calc(); });
+F.forEach(k=>$('#'+k).addEventListener('input',calc));
+document.addEventListener('click',e=>{const a=e.target.closest('[data-calc]'); if(!a) return; e.preventDefault(); showTab('whatnot'); selectCard(byId.get(+a.dataset.calc)); window.scrollTo(0,0);});
+
+function calc(){
+  const v = k => { const x=parseFloat(String($('#'+k).value).replace(',','.')); return isFinite(x)?x:0; };
+  store.set('calc',{shipIn:$('#shipIn').value,buyFee:$('#buyFee').value,sellFee:$('#sellFee').value,shipOut:$('#shipOut').value,target:$('#target').value,basis:$('#basis').value});
+  const bid=v('bid'), resale=v('resale'), shipIn=v('shipIn'), buyFee=v('buyFee')/100, sellFee=v('sellFee')/100, shipOut=v('shipOut'), target=v('target')/100;
+  const vd=$('#verdict');
+  if(!resale){ vd.className='verdict v-none'; vd.innerHTML='<div class="big">Choisis une carte</div><div class="line">ou tape directement un prix de revente</div>'; $('#breakdown').innerHTML=''; return; }
+  const cost = bid*(1+buyFee) + shipIn;
+  const net = resale*(1-sellFee) - shipOut;
+  const profit = net - cost, margin = cost>0 ? profit/cost : 0;
+  const maxBid = Math.max(0, (net/(1+target) - shipIn)/(1+buyFee));
+  const breakEven = Math.max(0, (net - shipIn)/(1+buyFee));
+  let c, title;
+  if(margin>=target){ c='v-good'; title = margin>=target*2 ? 'Très bonne affaire' : 'Bonne affaire'; }
+  else if(profit>0){ c='v-mid'; title='Marge faible'; }
+  else { c='v-bad'; title='Trop cher'; }
+  vd.className='verdict '+c;
+  vd.innerHTML = `<div class="big">${title}</div><div class="line">Marge ${profit>=0?'+':''}${eur(profit)} (${pc(margin)})</div><div class="line">Enchère max pour ${Math.round(target*100)} % : <b>${eur(maxBid)}</b></div>`;
+  const warn = selected && ((selected.f||[]).includes('pic')||(selected.f||[]).includes('fantome')) ? '<tr><td colspan="2" style="color:var(--warn)">Prix Cardmarket à vérifier sur les offres réelles avant d\'enchérir.</td></tr>' : '';
+  $('#breakdown').innerHTML = `
+    <tr><td>Enchère</td><td>${eur(bid)}</td></tr>
+    <tr><td>Frais acheteur Whatnot</td><td>${eur(bid*buyFee)}</td></tr>
+    <tr><td>Port Whatnot</td><td>${eur(shipIn)}</td></tr>
+    <tr><td><b>Coût total</b></td><td><b>${eur(cost)}</b></td></tr>
+    <tr><td>Revente estimée</td><td>${eur(resale)}</td></tr>
+    <tr><td>Commission Cardmarket</td><td>−${eur(resale*sellFee)}</td></tr>
+    <tr><td>Envoi à ta charge</td><td>−${eur(shipOut)}</td></tr>
+    <tr><td><b>Net encaissé</b></td><td><b>${eur(net)}</b></td></tr>
+    <tr><td>Seuil de rentabilité (enchère)</td><td>${eur(breakEven)}</td></tr>${warn}`;
+}
+calc();
+})();
+</script>

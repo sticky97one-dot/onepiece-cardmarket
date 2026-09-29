@@ -1,0 +1,32 @@
+name: Collecte quotidienne Cardmarket One Piece
+
+on:
+  schedule:
+    - cron: "15 3 * * *"   # 05h15 à Paris (le fichier Cardmarket est généré vers 03h)
+    - cron: "15 7 * * *"   # 2e passage de sécurité
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Télécharger les prix du jour
+        run: python scripts/fetch.py
+      - name: Analyser
+        run: |
+          python scripts/analyze.py
+          python scripts/build_page.py
+      - name: Enregistrer
+        run: |
+          git config user.name "radar-bot"
+          git config user.email "radar-bot@users.noreply.github.com"
+          git add data/history data/raw site reports
+          git diff --cached --quiet || git commit -m "Prix Cardmarket du $(date -u +%F)"
+          git push
