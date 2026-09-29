@@ -206,7 +206,7 @@ function spark(h){
 }
 function row(i){
   const chg = i.d7!=null ? i.d7 : i.m;
-  const tags = (i.f||[]).map(f=>`<span class="tag">${{pic:'Pic isolé',fantome:'Prix bas suspect',nouveau:'Nouveauté'}[f]||f}</span>`).join(' ');
+  const tags = (i.f||[]).map(f=>`<span class="tag">${{pic:'Pic isolé',fantome:'Prix bas suspect',nouveau:'Nouveauté',rare:'Peu d\'échanges'}[f]||f}</span>`).join(' ');
   return `<div class="row">
     <div class="name">${label(i)}</div>
     <div class="px">${eur(i.t)}</div>

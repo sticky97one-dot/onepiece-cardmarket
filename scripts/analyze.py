@@ -30,6 +30,15 @@ SET_NAMES = {
     "OP13": "Carrying On His Will", "EB01": "Memorial Collection", "EB02": "Anime 25th Collection",
     "PRB01": "Premium Booster", "P": "Promos",
 }
+# extensions "fourre-tout" de Cardmarket (promos, rééditions) : noms lisibles
+EXP_OVERRIDES = {
+    5262: "Promos tournois & événements", 5303: "Promos packs de participation",
+    5510: "Promos boutique & Red Envelope", 5598: "Promos spéciales (lot 5598)",
+    6684: "Promos spéciales (lot 6684)", 6677: "Promos diverses", 6498: "Promos diverses (2026)",
+    5267: "Premium Card Collection", 5302: "Revision Pack", 5312: "Judge Pack",
+    5804: "PRB01 The Best (Asie)", 5805: "PRB01 The Best", 6233: "PRB02 The Best Vol.2 (Asie)",
+    6242: "PRB02 The Best Vol.2", 6625: "Best Selection Vol.2 (Asie)",
+}
 CODE_RE = re.compile(r"\(([A-Z]{1,5}\d{0,3}-\d{3}[A-Za-z]?)\)")
 
 
@@ -99,9 +108,11 @@ def expansion_labels(singles, nonsingles):
             labels[exp] = f"{top} · {name}" if name else top
         elif sealed_names.get(exp):
             n = min(sealed_names[exp], key=len)
-            labels[exp] = re.sub(r"\s*(Booster Box|Booster Display|Display|Booster|Case)\b.*$", "", n).strip() or n
+            labels[exp] = re.sub(r"\s*(Deck Pack|Booster Box|Booster Display|Display|Booster|Case)\b.*$", "", n).strip() or n
         else:
             labels[exp] = f"Extension {exp}"
+    for exp, lab in EXP_OVERRIDES.items():
+        labels[exp] = lab
     return labels
 
 
@@ -174,11 +185,14 @@ def analyze():
         t_30 = pct(trend, a30)
         low_ratio = (low / trend) if (low and trend) else None
 
+        thin = bool((a7 and a30 and abs(a7 - a30) < 0.005 * a30) or (low_ratio and low_ratio > 2) or not a1)
         # --- liquidité (le fichier ne donne pas de volumes : on regarde s'il y a des ventes récentes)
         if sold_ratio is not None:
             liq = 0.3 + 0.7 * sold_ratio
         else:
             liq = 1.0 if (a1 and a7 and a30) else (0.65 if (a7 and a30) else 0.35)
+        if thin:
+            liq *= 0.6
 
         # --- dynamique
         mom = 0.0
@@ -189,7 +203,7 @@ def analyze():
         if a1 and a7 and a1 >= a7:
             conf += 0.06
         if low_ratio is not None:
-            if low_ratio >= 0.9:
+            if 0.9 <= low_ratio <= 1.6:
                 conf += 0.08
             elif low_ratio < 0.5:
                 conf -= 0.08
@@ -209,16 +223,19 @@ def analyze():
         if phantom:
             flags.append("fantome")
             reasons.append("prix bas anormalement faible : vérifier les offres réelles")
+        if thin and trend >= MIN_TREND_LIST:
+            flags.append("rare")
+            reasons.append("peu d'échanges : prix moins fiable")
         if age < NEW_DAYS:
             flags.append("nouveau")
             reasons.append(f"sortie il y a {age} j : prix encore instable")
-        score = round(clip((raw + 0.05) / 0.55, 0, 1) * 100)
+        score = round(clip((raw + 0.05) / 0.85, 0, 1) * 100)
 
         if m7_30 is not None and abs(m7_30) >= 0.05:
             reasons.insert(0, f"moy. 7 j {m7_30:+.0%} vs 30 j")
         if d7 is not None and abs(d7) >= 0.05:
             reasons.insert(0, f"tendance {d7:+.0%} sur 7 j")
-        if low_ratio is not None and low_ratio >= 0.9 and trend >= MIN_TREND_LIST:
+        if low_ratio is not None and 0.9 <= low_ratio <= 1.6 and trend >= MIN_TREND_LIST:
             reasons.append("offres tendues : prix le plus bas ≥ 90 % de la tendance")
         if streak >= 3:
             reasons.append(f"{streak} hausses de suite")
@@ -226,8 +243,8 @@ def analyze():
         cat = []
         liquid = liq >= 0.6
         if trend >= MIN_TREND_LIST and not spike and not phantom:
-            if (0.08 <= (m7_30 or 0) <= 0.6 and (t_30 or 0) > 0.05 and (low_ratio or 0) >= 0.75
-                    and liquid and age >= NEW_DAYS):
+            if (0.08 <= (m7_30 or 0) <= 0.6 and (t_30 or 0) > 0.05 and 0.75 <= (low_ratio or 0) <= 1.6
+                    and liquid and not thin and age >= NEW_DAYS):
                 cat.append("decollage")
             if (m7_30 or 0) > 0.6 or (d7 or 0) > 0.6:
                 cat.append("flambee")
