@@ -1,0 +1,16 @@
+Radar Whatnot One Piece — installation (Chrome ou Edge sur PC)
+
+1. Dézippe le fichier radar-whatnot.zip dans un dossier que tu ne supprimeras pas
+   (par exemple Documents\radar-whatnot).
+2. Dans Chrome, ouvre la page chrome://extensions (dans Edge : edge://extensions).
+3. Active « Mode développeur » (interrupteur en haut à droite).
+4. Clique « Charger l'extension non empaquetée » et choisis le dossier radar-whatnot.
+5. Ouvre un live sur whatnot.com : le panneau « Radar Whatnot » apparaît à droite.
+
+Utilisation
+- Le panneau détecte les codes de cartes écrits à l'écran (ex. OP09-062) dans le titre du lot ou le chat.
+- Touche la version annoncée par le vendeur (anglaise / Asie-JP, V1 / V2…).
+- Il affiche : l'enchère max pour revendre avec ta marge, et l'enchère max pour garder la carte.
+- L'enchère en cours est lue automatiquement (le montant en € le plus gros à l'écran) ; tu peux la taper toi-même.
+- Si le vendeur n'écrit pas le code : tape « robin 062 » ou « OP09-062 » dans la recherche puis Entrée.
+- Les prix se mettent à jour tout seuls chaque matin (bouton ↻ pour forcer).
