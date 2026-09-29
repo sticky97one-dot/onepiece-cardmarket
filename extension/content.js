@@ -312,7 +312,7 @@
   function preselect() {
     const vs = versionsOf(current);
     const wantJP = lang === "JP";
-    const wantAlt = visionPref && visionPref.alt != null ? visionPref.alt : hints.includes("alt");
+    const wantAlt = visionPref ? visionPref.alt === true : hints.includes("alt");
     const prefix = current.split("-")[0];
     let pool = vs.filter(v => /Asie|JP/.test(v.e) === wantJP && v.e.startsWith(prefix));
     if (!pool.length) pool = vs.filter(v => /Asie|JP/.test(v.e) === wantJP);
@@ -543,6 +543,11 @@
     if (lang === "JP" && !isAsia(v)) notes.push("⚠ Carte JP mais version EN sélectionnée : choisis la ligne Asie/JP.");
     if ((lang === "EN" || lang === "FR") && isAsia(v)) notes.push("⚠ Carte EN/FR mais version Asie/JP sélectionnée.");
     if (!lang) notes.push("Langue inconnue : touche EN, FR ou JP pour un prix juste.");
+    // garde-fou : grosse différence de prix entre versions de la même langue
+    const same = versionsOf(current).filter(x => isAsia(x) === isAsia(v) && x.t > 0);
+    const cheapest = same.reduce((m, x) => (!m || x.t < m.t) ? x : m, null);
+    if (cheapest && cheapest.id !== v.id && v.t > cheapest.t * 4)
+      notes.unshift(`⚠ La version de base de cette carte vaut ${eur(cheapest.t)} (V${cheapest.v || 1}). Tu as choisi une version à ${eur(v.t)} : ne mise ce prix que si tu es SÛR que c'est une alt / parallèle (compare les images sur Cardmarket).`);
     if (v.lo && bid != null && bid > v.lo * langFactor(v)) notes.push(`💡 Sur Cardmarket, la moins chère est à ${eur(v.lo)} (hors port, vérifier état et langue) : pas la peine de payer plus ici.`);
     el.innerHTML = `<div class="verdict ${c}"><div class="big">${t}</div>
       <div class="l">Pour revendre (${settings.target} % de marge) : <b>≤ ${eur(mb.max)}</b></div>
