@@ -170,7 +170,8 @@
     // pour garder la carte (investissement) : on accepte de payer jusqu'au prix du marché, sans frais de revente
     let keep = (resaleOf(i) - settings.shipIn) / (1 + settings.buyFee / 100);
     // jamais plus cher que l'acheter directement sur Cardmarket (offre la moins chère + port)
-    if (i.lo) keep = Math.min(keep, i.lo * langFactor(i) + settings.cmShip);
+    const b0 = Math.min(i.t, i.a7 || i.t);
+    if (i.lo && i.lo >= 0.5 * b0) keep = Math.min(keep, i.lo * langFactor(i) + settings.cmShip);
     // radar défavorable (déjà partie, en chute, prix peu fiable) : on ne paie pas plus que le prix « revente »
     if (verdictRadar(i).level === "bad") keep = max;
     return { max: Math.max(0, max), keep: Math.max(0, keep), resale: resaleOf(i) };
