@@ -257,7 +257,7 @@ def analyze():
 
         items.append({
             "id": pid, "n": re.sub(r"\s*\([^)]*\)\s*$", "", p["name"]), "c": code,
-            "v": version.get(pid), "e": exp_label.get(p["idExpansion"], ""), "k": kind,
+            "v": version.get(pid), "g": p.get("idMetacard") or 0, "e": exp_label.get(p["idExpansion"], ""), "k": kind,
             "t": trend, "lo": low, "a1": a1, "a7": a7, "a30": a30,
             "d1": round(d1, 4) if d1 is not None else None,
             "d7": round(d7, 4) if d7 is not None else None,
@@ -269,6 +269,8 @@ def analyze():
             "h": [round(x, 2) for x in tr_hist[-30:]],
         })
 
+    catch_up(items)
+
     def top(key, cond, n=TOP_N, rev=True):
         return [i["id"] for i in sorted((i for i in items if cond(i)), key=key, reverse=rev)[:n]]
 
@@ -279,6 +281,7 @@ def analyze():
         "scelle": top(lambda i: i["s"], lambda i: i["k"] == "N" and i["t"] >= 10),
         "chute": top(lambda i: (i["m"] or 0), lambda i: "chute" in i["cat"], rev=False),
         "piege": top(lambda i: i["t"], lambda i: "piege" in i["cat"]),
+        "rattrapage": top(lambda i: i.get("cu", 0), lambda i: "rattrapage" in i["cat"]),
     }
     out = {
         "generatedAt": datetime.now(timezone.utc).isoformat(timespec="minutes"),
@@ -296,6 +299,54 @@ def analyze():
     return out
 
 
+def momentum(i):
+    """Dynamique d'une version : historique 7 j si disponible, sinon moyenne 7 j vs 30 j."""
+    return i["d7"] if i["d7"] is not None else i["m"]
+
+
+def is_clean(i):
+    return (i["a7"] and i["a30"] and not ({"rare", "pic", "fantome"} & set(i["f"])))
+
+
+def catch_up(items):
+    """Repère les versions d'une même carte restées en retard alors qu'une autre version a décollé.
+
+    Même carte = même idMetacard chez Cardmarket (base, parallèle, alt art, promo, réédition...).
+    """
+    groups = defaultdict(list)
+    for i in items:
+        if i["k"] == "S" and i["g"]:
+            groups[i["g"]].append(i)
+    for vers in groups.values():
+        for i in vers:
+            i["nv"] = len(vers)
+        if len(vers) < 2:
+            continue
+        # version "meneuse" : hausse nette mais crédible (ventes récentes au niveau, offres cohérentes)
+        leaders = [x for x in vers if is_clean(x) and 0.35 <= (momentum(x) or 0) <= 2.0 and x["t"] >= 3
+                   and x["a1"] and x["a1"] >= 0.8 * x["a7"] and x["lr"] and 0.6 <= x["lr"] <= 1.6]
+        if not leaders:
+            continue
+        lead = max(leaders, key=lambda x: momentum(x) or 0)
+        for i in vers:
+            if i is lead or not is_clean(i) or not i["a1"] or i["t"] < 3:
+                continue
+            mo = momentum(i) or 0
+            gap = (momentum(lead) or 0) - mo
+            if mo > 0.15 or mo < -0.25 or gap < 0.3:
+                continue
+            # même "gamme" de version (on ne compare pas une commune à 5 € avec une alt art à 2 000 €)
+            if not (0.2 <= i["t"] / lead["t"] <= 2.5) or not i["lr"] or i["lr"] < 0.75:
+                continue
+            tight = 1.0 if (i["lr"] and 0.8 <= i["lr"] <= 1.6) else 0.75
+            i["cu"] = round(gap * i["liq"] * tight, 3)
+            i["cat"].append("rattrapage")
+            lv = f" V{lead['v']}" if lead["v"] else ""
+            i["r"].insert(0, f"la version {lead['e']}{lv} à {lead['t']:.0f} € a pris {momentum(lead):+.0%}, "
+                             f"celle-ci seulement {mo:+.0%} : retard à rattraper")
+            i["r"] = i["r"][:4]
+
+
 def write_report(out):
     by_id = {i["id"]: i for i in out["items"]}
 
@@ -304,7 +355,7 @@ def write_report(out):
         return (f"- **{i['n']}** {i['c']}{v} ({i['e']}) — {i['t']:.2f} € · score {i['s']}"
                 f" · {', '.join(i['r'][:3])}")
 
-    titles = {"decollage": "Cartes qui décollent", "flambee": "Déjà en forte hausse (prudence)",
+    titles = {"rattrapage": "Versions en retard (potentiel de rattrapage)", "decollage": "Cartes qui décollent", "flambee": "Déjà en forte hausse (prudence)",
               "rebond": "Rebonds après une baisse", "scelle": "Produits scellés",
               "chute": "En chute", "piege": "Pièges à éviter"}
     md = [f"# Radar One Piece — prix Cardmarket du {out['priceDate']}",

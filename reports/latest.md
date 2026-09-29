@@ -1,6 +1,18 @@
 # Radar One Piece — prix Cardmarket du 2026-09-29
 7427 produits analysés · historique : 1 jour(s)
 
+## Versions en retard (potentiel de rattrapage) (40)
+- **Don!!**  V1 (Dash Pack 2025) — 5.98 € · score 1 · la version Dash Pack 2025 V2 à 20 € a pris +160%, celle-ci seulement -10% : retard à rattraper, moy. 7 j -10% vs 30 j
+- **Monkey.D.Luffy** ST10-006 (Premium Card Collection) — 804.42 € · score 0 · la version Promos boutique & Red Envelope V1 à 740 € a pris +144%, celle-ci seulement -19% : retard à rattraper, moy. 7 j -19% vs 30 j, offres tendues : prix le plus bas ≥ 90 % de la tendance
+- **Sanji** OP07-064 (Premium Card Collection) — 56.58 € · score 7 · la version Promos boutique & Red Envelope V2 à 29 € a pris +124%, celle-ci seulement -6% : retard à rattraper, moy. 7 j -6% vs 30 j
+- **Charlotte Pudding** OP08-058 V2 (OP08 · Two Legends) — 41.92 € · score 24 · la version EB02 · Anime 25th Collection à 180 € a pris +125%, celle-ci seulement +4% : retard à rattraper
+- **Eustass""Captain""Kid** ST02-001 V3 (ST02) — 6.89 € · score 0 · la version Promos boutique & Red Envelope à 15 € a pris +93%, celle-ci seulement -23% : retard à rattraper, moy. 7 j -23% vs 30 j, offres tendues : prix le plus bas ≥ 90 % de la tendance
+- **Urouge** OP07-021 (OP10 · Royal Blood) — 25.66 € · score 0 · la version Promos tournois & événements V2 à 48 € a pris +91%, celle-ci seulement -18% : retard à rattraper, moy. 7 j -18% vs 30 j, offres tendues : prix le plus bas ≥ 90 % de la tendance
+- **Zeus** OP11-106 (OP15) — 323.64 € · score 5 · la version Promos boutique & Red Envelope à 223 € a pris +99%, celle-ci seulement -5% : retard à rattraper
+- **Dereshi!** OP09-117 (Promos packs de participation) — 5.81 € · score 15 · la version Promos boutique & Red Envelope à 11 € a pris +93%, celle-ci seulement -3% : retard à rattraper, offres tendues : prix le plus bas ≥ 90 % de la tendance
+- **Marshall.D.Teach** ST17-005 V2 (Promos boutique & Red Envelope) — 9.73 € · score 35 · la version Promos boutique & Red Envelope V1 à 13 € a pris +94%, celle-ci seulement +5% : retard à rattraper, moy. 7 j +5% vs 30 j, offres tendues : prix le plus bas ≥ 90 % de la tendance
+- **Sanji** OP07-064 V2 (OP07 · 500 Years in the Future) — 12.56 € · score 15 · la version Promos boutique & Red Envelope V2 à 29 € a pris +124%, celle-ci seulement +12% : retard à rattraper, moy. 7 j +12% vs 30 j
+
 ## Cartes qui décollent (40)
 - **Jinbe** ST01-005 (Promos boutique & Red Envelope) — 10.36 € · score 100 · moy. 7 j +56% vs 30 j, offres tendues : prix le plus bas ≥ 90 % de la tendance
 - **Roronoa Zoro** OP01-025 (Promos boutique & Red Envelope) — 729.21 € · score 100 · moy. 7 j +59% vs 30 j, offres tendues : prix le plus bas ≥ 90 % de la tendance

@@ -56,6 +56,15 @@ button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{ou
 .score i{display:block;width:44px;height:6px;border-radius:3px;background:var(--line);position:relative;overflow:hidden}
 .score i::after{content:"";position:absolute;inset:0;width:var(--w);background:var(--accent);border-radius:3px}
 svg.spark{display:block}
+details.vers{grid-column:1 / -1;margin-top:4px}
+details.vers summary{font-size:12.5px;color:var(--accent);font-weight:600}
+.vt{overflow-x:auto;margin-top:6px}
+.vt table{width:100%;border-collapse:collapse;font-size:12.5px}
+.vt th{text-align:left;color:var(--muted);font-weight:500;padding:4px 6px 4px 0}
+.vt td{padding:5px 6px 5px 0;border-top:1px solid var(--line);font-variant-numeric:tabular-nums;white-space:nowrap}
+.vt td:first-child{white-space:normal}
+.vt tr.me td{font-weight:700}
+.tag.ok{background:var(--up-soft);color:var(--up)} .tag.mute{background:var(--bg);color:var(--muted)}
 .empty{padding:22px 14px;color:var(--muted);text-align:center}
 /* calculateur */
 .calc{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
@@ -181,6 +190,8 @@ footer{margin-top:26px;color:var(--muted);font-size:12.5px;max-width:70ch}
 (function(){
 const D = JSON.parse(document.getElementById('data').textContent);
 const byId = new Map(D.items.map(i=>[i.id,i]));
+const groups = new Map();
+D.items.forEach(i=>{ if(i.k==='S' && i.g){ if(!groups.has(i.g)) groups.set(i.g,[]); groups.get(i.g).push(i); } });
 const $ = s=>document.querySelector(s);
 const eur = v => v==null ? '—' : (v>=100 ? v.toFixed(0) : v.toFixed(2)).replace('.',',')+' €';
 const pc = v => v==null ? '—' : (v>0?'+':'')+Math.round(v*100)+' %';
@@ -213,13 +224,26 @@ function row(i){
     <div class="sub">${esc(i.e)}${i.k==='N'?' · scellé':''} · bas ${eur(i.lo)} · 7 j ${eur(i.a7)} · 30 j ${eur(i.a30)}</div>
     <div class="right"><span class="pill ${cls(chg)}">${pc(chg)} ${i.d7!=null?'7 j':'7/30'}</span>${spark(i.h)}</div>
     <div class="why">${tags}${(i.r||[]).map(r=>`<span>${esc(r)}</span>`).join('')}</div>
-    <div class="sub" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap"><span class="score" title="Score de potentiel">score ${i.s}<i style="--w:${i.s}%"></i></span><a class="cm" href="${cmUrl(i)}" target="_blank" rel="noopener">Voir sur Cardmarket ↗</a><a class="cm" href="#whatnot" data-calc="${i.id}">Calculer une marge</a></div>
+    <div class="sub" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">${i.cu ? '<span class="tag ok">Version en retard</span>' : `<span class="score" title="Score de potentiel">score ${i.s}<i style="--w:${i.s}%"></i></span>`}<a class="cm" href="${cmUrl(i)}" target="_blank" rel="noopener">Voir sur Cardmarket ↗</a><a class="cm" href="#whatnot" data-calc="${i.id}">Calculer une marge</a></div>
+    ${versions(i)}
   </div>`;
+}
+function versions(i){
+  const vs = (groups.get(i.g)||[]).slice().sort((a,b)=>b.t-a.t);
+  if(vs.length<2) return '';
+  const rows = vs.map(v=>{
+    const mo = v.d7!=null ? v.d7 : v.m;
+    const tag = v.id===i.id ? ' class="me"' : '';
+    const hint = (v.cat||[]).includes('rattrapage') ? '<span class="tag ok">En retard</span>' : (mo!=null && mo>0.6 ? '<span class="tag">Déjà partie</span>' : ((v.f||[]).includes('rare')?'<span class="tag mute">Peu d\'échanges</span>':''));
+    return `<tr${tag}><td>${esc(v.e)}${v.v?' · V'+v.v:''}</td><td>${eur(v.t)}</td><td><span class="pill ${cls(mo)}">${pc(mo)}</span></td><td>${hint}</td></tr>`;
+  }).join('');
+  return `<details class="vers"><summary>${vs.length} versions de cette carte</summary><div class="vt"><table><thead><tr><th>Extension · version</th><th>Prix</th><th>Évol.</th><th></th></tr></thead><tbody>${rows}</tbody></table></div></details>`;
 }
 function renderList(el, ids){ el.innerHTML = ids.length ? ids.map(id=>row(byId.get(id))).join('') : '<div class="empty">Rien dans cette catégorie aujourd\'hui.</div>'; }
 
 // ---- Radar
 const CATS = [
+  ['rattrapage','Rattrapage',"Versions restées en retard alors qu'une autre version de la même carte vient de monter nettement : la hausse peut se propager. Ouvre « versions » pour comparer."],
   ['decollage','Décollage',"Cartes qui commencent à monter avec des ventes régulières et des offres qui se raréfient : le meilleur moment pour se positionner."],
   ['rebond','Rebond',"Cartes retombées sous leur moyenne 30 jours qui se revendent à nouveau plus cher : possible point bas."],
   ['flambee','Déjà partie',"Hausse très forte déjà faite : risque d'acheter au sommet. À surveiller plutôt qu'à acheter."],
@@ -227,7 +251,7 @@ const CATS = [
   ['chute','En chute',"Baisse nette sur 7 et 30 jours : à éviter, ou à guetter pour racheter bas."],
   ['piege','Pièges',"Prix trompeurs : vente isolée qui gonfle la moyenne, ou prix le plus bas anormalement faible."],
 ];
-let cat = store.get('cat','decollage');
+let cat = store.get('cat','rattrapage');
 function renderChips(){
   $('#chips').innerHTML = CATS.map(([k,l])=>`<button class="chip" aria-pressed="${k===cat}" data-cat="${k}">${l}<span class="n">${(D.lists[k]||[]).length}</span></button>`).join('');
   const c = CATS.find(c=>c[0]===cat) || CATS[0];
