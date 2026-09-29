@@ -89,28 +89,47 @@ def value_back(days, s, n):
     return None
 
 
+ASIA_RE = re.compile(r"\((Non-English|Asia Region Legal|Japanese)\)", re.I)
+PRODUCT_RE = re.compile(r"\s*(\(12x Booster Box\)|Booster Box Case|Booster Box|Sleeved Booster|Booster Display|Booster|"
+                        r"Deck Pack|Bonus Pack|Display|Case)\b.*$", re.I)
+
+
+def clean_product_name(n):
+    n = ASIA_RE.sub("", n).replace("  ", " ").strip()
+    return PRODUCT_RE.sub("", n).strip(" -:") or n
+
+
 def expansion_labels(singles, nonsingles):
+    """Nom lisible de chaque extension Cardmarket, avec la mention Asie/JP pour les éditions non anglaises."""
     codes = defaultdict(Counter)
     for p in singles:
         m = CODE_RE.search(p["name"])
         if m:
             codes[p["idExpansion"]][m.group(1).split("-")[0]] += 1
-    sealed_names = defaultdict(list)
+    sealed = defaultdict(list)
     for p in nonsingles:
-        sealed_names[p["idExpansion"]].append(p["name"])
+        sealed[p["idExpansion"]].append(p["name"])
     labels = {}
-    for exp in set(codes) | set(sealed_names):
+    for exp in set(codes) | set(sealed):
         c = codes.get(exp)
-        top = c.most_common(1)[0][0] if c else None
-        share = (c.most_common(1)[0][1] / sum(c.values())) if c else 0
-        name = SET_NAMES.get(top) if top else None
-        if top and share >= 0.6:
-            labels[exp] = f"{top} · {name}" if name else top
-        elif sealed_names.get(exp):
-            n = min(sealed_names[exp], key=len)
-            labels[exp] = re.sub(r"\s*(Deck Pack|Booster Box|Booster Display|Display|Booster|Case)\b.*$", "", n).strip() or n
+        top, share = (c.most_common(1)[0][0], c.most_common(1)[0][1] / sum(c.values())) if c else (None, 0)
+        names = sealed.get(exp, [])
+        asia = any(ASIA_RE.search(n) for n in names)
+        pname = Counter(clean_product_name(n) for n in names).most_common(1)[0][0] if names else None
+        special = bool(pname and re.search(r"pre-release|release event|tournament|anniversary|demo|starter|deck", pname, re.I))
+        if top and share >= 0.6 and top in SET_NAMES and not special and (not pname or SET_NAMES[top].lower()[:8] in pname.lower()):
+            lab = f"{top} · {SET_NAMES[top]}"
+        elif pname and top and share >= 0.6 and not pname.startswith(top):
+            lab = f"{top} · {pname}"
+        elif pname:
+            lab = pname
+        elif top and share >= 0.6:
+            lab = f"{top} · {SET_NAMES[top]}" if top in SET_NAMES else top
         else:
-            labels[exp] = f"Extension {exp}"
+            lab = f"Extension {exp}"
+        if any("Pre-Errata" in n for n in names):
+            lab += " · Pre-Errata"
+        labels[exp] = lab + (" · Asie/JP" if asia else "")
     for exp, lab in EXP_OVERRIDES.items():
         labels[exp] = lab
     return labels
@@ -254,6 +273,15 @@ def analyze():
                 cat.append("chute")
         if spike or phantom:
             cat.append("piege")
+        # offre sous le marché : la moins chère est nettement sous les ventes récentes
+        disc = None
+        if (not spike and not phantom and not thin and a1 and a7 and low and trend >= 10
+                and low >= 0.3 * trend):
+            ref = min(a1, a7, trend)
+            if 0.6 * ref <= low <= 0.82 * ref:  # au-delà de -40 % : souvent carte abîmée ou offre douteuse
+                disc = round(1 - low / ref, 3)
+                cat.append("affaire")
+                reasons.insert(0, f"offre à {low:.2f} € soit {disc:.0%} sous les ventes récentes (vérifier état et langue)")
 
         items.append({
             "id": pid, "n": re.sub(r"\s*\([^)]*\)\s*$", "", p["name"]), "c": code,
@@ -264,7 +292,7 @@ def analyze():
             "d30": round(d30, 4) if d30 is not None else None,
             "m": round(m7_30, 4) if m7_30 is not None else None,
             "lr": round(low_ratio, 3) if low_ratio is not None else None,
-            "liq": round(liq, 2), "s": score, "f": flags, "cat": cat,
+            "liq": round(liq, 2), "s": score, "dc": disc, "f": flags, "cat": cat,
             "r": reasons[:4], "age": age,
             "h": [round(x, 2) for x in tr_hist[-30:]],
         })
@@ -282,6 +310,7 @@ def analyze():
         "chute": top(lambda i: (i["m"] or 0), lambda i: "chute" in i["cat"], rev=False),
         "piege": top(lambda i: i["t"], lambda i: "piege" in i["cat"]),
         "rattrapage": top(lambda i: i.get("cu", 0), lambda i: "rattrapage" in i["cat"]),
+        "affaire": top(lambda i: (i["dc"] or 0) * min(1, i["t"] / 50), lambda i: "affaire" in i["cat"]),
     }
     out = {
         "generatedAt": datetime.now(timezone.utc).isoformat(timespec="minutes"),
@@ -355,7 +384,7 @@ def write_report(out):
         return (f"- **{i['n']}** {i['c']}{v} ({i['e']}) — {i['t']:.2f} € · score {i['s']}"
                 f" · {', '.join(i['r'][:3])}")
 
-    titles = {"rattrapage": "Versions en retard (potentiel de rattrapage)", "decollage": "Cartes qui décollent", "flambee": "Déjà en forte hausse (prudence)",
+    titles = {"affaire": "Offres sous le marché", "rattrapage": "Versions en retard (potentiel de rattrapage)", "decollage": "Cartes qui décollent", "flambee": "Déjà en forte hausse (prudence)",
               "rebond": "Rebonds après une baisse", "scelle": "Produits scellés",
               "chute": "En chute", "piege": "Pièges à éviter"}
     md = [f"# Radar One Piece — prix Cardmarket du {out['priceDate']}",
