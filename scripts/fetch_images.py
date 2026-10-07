@@ -12,7 +12,7 @@ WANTED = os.path.join(ROOT, "images", "wanted.txt")
 OUT = os.path.join(ROOT, "images", "out")
 SITES = {"JP": ["https://www.onepiece-cardgame.com", "https://asia-en.onepiece-cardgame.com"],
          "EN": ["https://en.onepiece-cardgame.com", "https://asia-en.onepiece-cardgame.com"],
-         "FR": ["https://fr.onepiece-cardgame.com", "https://en.onepiece-cardgame.com"]}
+         "FR": ["https://fr.onepiece-cardgame.com", "https://en.onepiece-cardgame.com", "https://www.onepiece-cardgame.com"]}
 
 
 def get(url):
@@ -26,6 +26,7 @@ def main():
     if not os.path.exists(WANTED):
         print("Rien à télécharger"); return
     ok = miss = 0
+    log = open(os.path.join(OUT, "log.txt"), "a", encoding="utf-8")
     for line in open(WANTED, encoding="utf-8"):
         parts = line.split()
         if len(parts) < 3 or line.startswith("#"):
@@ -41,9 +42,9 @@ def main():
             for suf in suffixes:
                 url = f"{site}/images/cardlist/card/{code}{suf}.png"
                 try:
-                    body = get(url); print("OK ", key, url); break
+                    body = get(url); print("OK ", key, url); log.write(f"OK {key} {url}\n"); break
                 except Exception as e:  # noqa
-                    print("   ", key, url, e)
+                    print("   ", key, url, e); log.write(f"-- {key} {url} {e}\n")
                 time.sleep(1)
             if body:
                 break
