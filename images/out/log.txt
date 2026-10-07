@@ -1,6 +1,0 @@
--- OP12-049-FR https://fr.onepiece-cardgame.com/images/cardlist/card/OP12-049.png HTTP Error 404: Not Found
-OK OP12-049-FR https://en.onepiece-cardgame.com/images/cardlist/card/OP12-049.png
--- ST15-002-FR https://fr.onepiece-cardgame.com/images/cardlist/card/ST15-002.png HTTP Error 404: Not Found
-OK ST15-002-FR https://en.onepiece-cardgame.com/images/cardlist/card/ST15-002.png
--- ST20-005-FR https://fr.onepiece-cardgame.com/images/cardlist/card/ST20-005.png HTTP Error 404: Not Found
-OK ST20-005-FR https://en.onepiece-cardgame.com/images/cardlist/card/ST20-005.png

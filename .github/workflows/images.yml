@@ -20,7 +20,6 @@ jobs:
       - name: Télécharger les images
         run: |
           python scripts/fetch_images.py
-          python scripts/probe_fr.py || true
       - name: Enregistrer
         run: |
           git config user.name "radar-bot"

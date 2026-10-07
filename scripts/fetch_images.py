@@ -40,12 +40,15 @@ def main():
         body = None
         for site in SITES.get(lang, SITES["EN"]):
             for suf in suffixes:
-                url = f"{site}/images/cardlist/card/{code}{suf}.png"
-                try:
-                    body = get(url); print("OK ", key, url); log.write(f"OK {key} {url}\n"); break
-                except Exception as e:  # noqa
-                    print("   ", key, url, e); log.write(f"-- {key} {url} {e}\n")
-                time.sleep(1)
+                for ext in ("png", "webp"):  # le site français sert du .webp
+                    url = f"{site}/images/cardlist/card/{code}{suf}.{ext}"
+                    try:
+                        body = get(url); print("OK ", key, url); log.write(f"OK {key} {url}\n"); break
+                    except Exception as e:  # noqa
+                        print("   ", key, url, e); log.write(f"-- {key} {url} {e}\n")
+                    time.sleep(1)
+                if body:
+                    break
             if body:
                 break
         if not body:
