@@ -18,7 +18,9 @@ jobs:
           python-version: "3.12"
       - run: pip install pillow
       - name: Télécharger les images
-        run: python scripts/fetch_images.py
+        run: |
+          python scripts/fetch_images.py
+          python scripts/probe_fr.py || true
       - name: Enregistrer
         run: |
           git config user.name "radar-bot"
