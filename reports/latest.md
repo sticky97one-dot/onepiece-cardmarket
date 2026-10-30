@@ -9,7 +9,7 @@
 - **Monkey.D.Luffy** ST16-005 V2 (Promos packs de participation) — 243.65 € · score 48 · offre à 115.00 € soit 40% sous les ventes récentes (vérifier état et langue), tendance +12% sur 7 j, moy. 7 j +66% vs 30 j
 - **Zoro-Juurou** OP05-067 (OP09 · Emperors in the New World) — 372.50 € · score 0 · offre à 220.00 € soit 39% sous les ventes récentes (vérifier état et langue), moy. 7 j -16% vs 30 j
 - **Shanks** OP01-120 V3 (OP01 · Romance Dawn) — 3852.80 € · score 22 · offre à 2130.00 € soit 39% sous les ventes récentes (vérifier état et langue), moy. 7 j +20% vs 30 j
-- **Monkey.D.Garp** OP02-002 (Gift Collection 2023 · Asie/JP) — 226.64 € · score 0 · offre à 110.00 € soit 39% sous les ventes récentes (vérifier état et langue)
+- **Monkey.D.Garp** OP02-002 (Mini · Asie/JP) — 226.64 € · score 0 · offre à 110.00 € soit 39% sous les ventes récentes (vérifier état et langue)
 - **Sabo** OP04-083 (PRB01 The Best) — 1048.17 € · score 58 · offre à 600.00 € soit 39% sous les ventes récentes (vérifier état et langue), moy. 7 j +51% vs 30 j
 - **Boa Hancock** P-066 V2 (P · July Exchange Meeting 2025 Theme Pack) — 99.14 € · score 14 · offre à 55.00 € soit 39% sous les ventes récentes (vérifier état et langue), tendance +6% sur 7 j, moy. 7 j -5% vs 30 j
 
@@ -59,15 +59,15 @@
 - **Nico Robin** ST29-009 (Promos boutique & Red Envelope) — 29.96 € · score 12 · tendance +17% sur 7 j, moy. 7 j -15% vs 30 j, offres tendues : prix le plus bas ≥ 90 % de la tendance
 
 ## Produits scellés (40)
-- **CS 2024 Celebration Pack**  (Gift Collection 2023 · Asie/JP) — 57.62 € · score 11 · tendance +39% sur 7 j, peu d'échanges : prix moins fiable, offres tendues : prix le plus bas ≥ 90 % de la tendance
+- **CS 2024 Celebration Pack**  (Mini · Asie/JP) — 57.62 € · score 11 · tendance +39% sur 7 j, peu d'échanges : prix moins fiable, offres tendues : prix le plus bas ≥ 90 % de la tendance
 - **Adventure on Kami’s Island Booster**  (OP15 · Adventure on Kami’s Island) — 14.80 € · score 11 · tendance +207% sur 7 j, peu d'échanges : prix moins fiable
 - **4th Anniversary Tournament Pack - OP17**  (OP17 · 4th Anniversary Tournament Pack - OP17) — 30.16 € · score 11 · tendance +1005% sur 7 j, prix bas anormalement faible : vérifier les offres réelles, peu d'échanges : prix moins fiable
-- **CS 2023 Celebration Pack**  (Gift Collection 2023 · Asie/JP) — 152.59 € · score 10 · tendance +36% sur 7 j, peu d'échanges : prix moins fiable, offres tendues : prix le plus bas ≥ 90 % de la tendance
+- **CS 2023 Celebration Pack**  (Mini · Asie/JP) — 152.59 € · score 10 · tendance +36% sur 7 j, peu d'échanges : prix moins fiable, offres tendues : prix le plus bas ≥ 90 % de la tendance
 - **Starter Deck: Blue Buggy Deck Pack**  (OP09 · Starter Deck: Blue Buggy) — 12.76 € · score 10 · tendance +41% sur 7 j, peu d'échanges : prix moins fiable, 9 hausses de suite
 - **Romance Dawn Booster Box**  (OP01 · Romance Dawn) — 936.34 € · score 9 · peu d'échanges : prix moins fiable, offres tendues : prix le plus bas ≥ 90 % de la tendance
 - **Awakening of the New Era Booster Box**  (OP05 · Awakening of the New Era) — 703.54 € · score 9 · peu d'échanges : prix moins fiable, offres tendues : prix le plus bas ≥ 90 % de la tendance
 - **Wings of the Captain Booster Box**  (OP06 · Wings of the Captain) — 288.50 € · score 9 · peu d'échanges : prix moins fiable, offres tendues : prix le plus bas ≥ 90 % de la tendance, 3 hausses de suite
-- **Tournament Pack Vol.5 -Winner-**  (Gift Collection 2023 · Asie/JP) — 35.52 € · score 9 · peu d'échanges : prix moins fiable, offres tendues : prix le plus bas ≥ 90 % de la tendance
+- **Tournament Pack Vol.5 -Winner-**  (Mini · Asie/JP) — 35.52 € · score 9 · peu d'échanges : prix moins fiable, offres tendues : prix le plus bas ≥ 90 % de la tendance
 - **1st Anniversary Set**  (Premium Card Collection) — 2233.49 € · score 9 · peu d'échanges : prix moins fiable, offres tendues : prix le plus bas ≥ 90 % de la tendance
 
 ## En chute (40)
